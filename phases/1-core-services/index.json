@@ -45,7 +45,10 @@
     {
       "step": 5,
       "name": "llm Premium 리포트 — 전월대비 + 이상거래",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-07-20T17:06:51+0900",
+      "summary": "마스킹된 AnalysisRecord만으로 코드 기반 전월 대비 계산과 Claude 기반 이상거래 탐지를 독립 리포트 함수로 구현했다.",
+      "completed_at": "2026-07-20T17:08:51+0900"
     },
     {
       "step": 6,

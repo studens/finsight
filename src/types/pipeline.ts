@@ -57,10 +57,27 @@ export type AnalysisRecord = {
 
 export type MonthOverMonthReport = {
   type: "mom_comparison"
+  hasPrevious: boolean
+  total: SpendingChange | null
+  categories: (SpendingChange & { category: string })[]
+  commentary: string | null
+}
+
+export type SpendingChange = {
+  current: number
+  previous: number
+  change: number
+  changeRate: number | null
 }
 
 export type AnomalyReport = {
   type: "anomaly_detection"
+  summary: string
+  anomalies: {
+    transactionIndex: number
+    reason: string
+    severity: "low" | "medium" | "high"
+  }[]
 }
 
 export type SavingsReport = {
