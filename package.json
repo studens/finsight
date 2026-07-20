@@ -1,0 +1,16 @@
+{
+  "name": "finsight",
+  "private": true,
+  "scripts": {
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "csv-parse": "^6.1.0",
+    "iconv-lite": "^0.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.2.0"
+  }
+}
