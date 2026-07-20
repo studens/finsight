@@ -7,7 +7,8 @@
       "name": "middleware.ts — 세션 기반 라우팅 게이팅",
       "status": "completed",
       "started_at": "2026-07-20T17:20:29+0900",
-      "summary": "Supabase SSR 쿠키 세션 갱신 헬퍼와 페이지 전용 인증 라우팅 미들웨어를 TDD로 구현"
+      "summary": "Supabase SSR 쿠키 세션 갱신 헬퍼와 페이지 전용 인증 라우팅 미들웨어를 TDD로 구현",
+      "completed_at": "2026-07-20T17:23:15+0900"
     },
     {
       "step": 1,
