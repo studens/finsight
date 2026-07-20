@@ -1,0 +1,39 @@
+{
+  "description": "finsight 프로젝트 Codex 훅 — .claude/settings.json 과 동일한 정책을 codex 하네스에 적용한다.",
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash scripts/hooks/stop-check.sh",
+            "timeout": 300,
+            "statusMessage": "lint/build/test 실행 중"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash scripts/hooks/dangerous-command-guard.sh",
+            "statusMessage": "위험한 명령어 검사 중"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash scripts/hooks/tdd-guard.sh",
+            "statusMessage": "TDD 가드 검사 중"
+          }
+        ]
+      }
+    ]
+  }
+}
