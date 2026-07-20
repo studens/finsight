@@ -37,7 +37,10 @@
     {
       "step": 4,
       "name": "llm Free 요약 생성",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-07-20T17:04:50+0900",
+      "summary": "MaskedRow 거래를 코드로 집계하고 카테고리 미매핑 시에만 Claude 분류를 사용하는 Free 요약 생성을 구현했다.",
+      "completed_at": "2026-07-20T17:06:31+0900"
     },
     {
       "step": 5,
