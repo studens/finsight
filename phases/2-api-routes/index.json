@@ -53,7 +53,10 @@
     {
       "step": 6,
       "name": "POST /api/webhooks/polar — 스텁 (polar-billing phase에서 구현)",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-07-20T17:37:11+0900",
+      "summary": "Polar 웹훅 요청에 부수효과 없이 501 NOT_IMPLEMENTED를 반환하는 스텁을 TDD로 구현",
+      "completed_at": "2026-07-20T17:38:08+0900"
     }
   ],
   "created_at": "2026-07-20T17:20:29+0900"
