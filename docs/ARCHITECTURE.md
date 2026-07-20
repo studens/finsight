@@ -78,7 +78,7 @@ src/
 이번 phase에는 `subscriptions` 테이블 스키마만 존재하고 위 흐름의 실제 구현(체크아웃 세션 생성, 웹훅 처리)은 없다. 개발 중 Premium 흐름을 확인하려면 `subscriptions` 레코드를 수동으로 만들어 테스트한다.
 
 ### 5) 에러 표시
-API는 `403 PAYWALL_REQUIRED` / `404 NOT_FOUND` / `502 GENERATION_FAILED` 같은 정확한 상태 코드+code를 반환하지만, 프론트엔드는 이를 그대로 노출하지 않는다. 세 케이스 모두 같은 모달 컴포넌트로 부드러운 문구를 띄우고, 페이지 이동 없이 현재 화면에 머문다 (문구/스타일은 `docs/UI_GUIDE.md` 참고).
+API는 `403 PAYWALL_REQUIRED` / `404 NOT_FOUND` / `502 GENERATION_FAILED` 같은 정확한 상태 코드+code를 반환하지만, 프론트엔드는 이를 그대로 노출하지 않는다. 세 케이스 모두 같은 모달 컴포넌트로 부드러운 문구를 띄우고, 페이지 이동 없이 현재 화면에 머문다 (문구/스타일은 `ui-design` 스킬 참고).
 
 ## 상태 관리
 - 서버 상태(업로드 목록, 리포트, 구독 상태, 분석 이력)는 Server Components에서 `lib/supabase/server.ts`로 직접 조회 — 별도 상태 관리 라이브러리 없음.

@@ -9,11 +9,13 @@ Claude Code로 기능을 phase/step 단위로 나눠 순차 실행·자가교정
 ├── harness.md    # 탐색 → 논의 → step 설계 → 파일 생성 → 실행 워크플로우
 └── review.md     # 변경 사항을 CLAUDE.md/ARCHITECTURE.md/ADR 기준으로 리뷰
 
+.claude/skills/
+└── ui-design/SKILL.md   # 디자인 원칙, 색상, 컴포넌트 스타일 (UI 작업 시에만 로드)
+
 docs/
 ├── PRD.md            # 목표, 사용자, 핵심 기능
 ├── ARCHITECTURE.md   # 디렉토리 구조, 데이터 흐름, 상태 관리
-├── ADR.md            # 아키텍처 결정 기록
-└── UI_GUIDE.md       # 디자인 원칙, 색상, 컴포넌트 스타일
+└── ADR.md            # 아키텍처 결정 기록
 
 scripts/
 ├── execute.py        # phase 내 step을 순차 실행하는 executor
