@@ -7,7 +7,8 @@
       "name": "공유 파이프라인 타입 정의 (브랜디드 MaskedRow 경계)",
       "status": "completed",
       "started_at": "2026-07-20T16:54:33+0900",
-      "summary": "CSV 파이프라인 공유 타입과 브랜디드 MaskedRow 경계를 타입 레벨 테스트로 정의했다."
+      "summary": "CSV 파이프라인 공유 타입과 브랜디드 MaskedRow 경계를 타입 레벨 테스트로 정의했다.",
+      "completed_at": "2026-07-20T16:56:26+0900"
     },
     {
       "step": 1,
