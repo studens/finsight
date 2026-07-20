@@ -2,6 +2,8 @@
   "name": "finsight",
   "private": true,
   "scripts": {
+    "build": "tsc --noEmit",
+    "lint": "tsc --noEmit",
     "test": "vitest run"
   },
   "dependencies": {
