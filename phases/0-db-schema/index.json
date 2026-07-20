@@ -1,0 +1,9 @@
+{
+  "project": "finsight",
+  "phase": "db-schema",
+  "steps": [
+    { "step": 0, "name": "analyses 테이블 + RLS 마이그레이션", "status": "pending" },
+    { "step": 1, "name": "subscriptions 테이블 + RLS 마이그레이션", "status": "pending" },
+    { "step": 2, "name": "advisors 보안 점검 및 TypeScript 타입 생성", "status": "pending" }
+  ]
+}

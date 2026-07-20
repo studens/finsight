@@ -30,3 +30,16 @@ npm run build    # 프로덕션 빌드
 npm run lint     # ESLint
 npm run test     # 테스트 (Vitest)
 npm run test:e2e # E2E 테스트 (Playwright)
+
+## 하네스: finsight MVP 계획·실행 오케스트레이션
+
+**역할 분담:** 실제 코드 구현은 `scripts/execute.py` + Codex CLI가 담당한다(`phases/{phase}/index.json` + `step{N}.md` 순차 실행). Claude Code 에이전트 팀(db-schema/core-services/api-routes/frontend/qa)은 코드를 직접 작성하지 않고, **execute.py가 실행할 phase/step 계획을 세우고, QA로 검증하고, execute.py 실행을 트리거·모니터링**한다.
+
+**트리거:** "phase 계획 짜줘", "MVP 구현 계획 세워줘", "execute.py 실행해줘", "Codex에게 넘겨줘", "계획대로 진행해줘" 등 요청 시 `finsight-build` 스킬을 사용하라. 특정 phase 계획 재작성, QA 지적사항 반영, blocked/error 난 step 재실행 같은 후속 요청도 동일 스킬을 사용한다. execute.py 실행(`--dangerously-bypass-approvals-and-sandbox`로 승인 없이 코드/커밋 생성)은 되돌리기 어려우므로 **phase 하나를 실행하기 전마다 반드시 사용자 확인**을 받는다.
+
+**변경 이력:**
+| 날짜 | 변경 내용 | 대상 | 사유 |
+|------|----------|------|------|
+| 2026-07-20 | 초기 구성 (db-schema/core-services/api-routes/frontend/qa 5인 팀 + 4개 스킬 + finsight-build 오케스트레이터, 팀이 코드 직접 구현) | 전체 | 코드 구현 전 설계 문서(PRD/ARCHITECTURE/ADR)가 명확한 역할 경계를 이미 갖고 있어, 그 경계를 그대로 에이전트 분리 기준으로 사용 |
+| 2026-07-20 | 상태를 "보류/참고용"으로 변경, 자동 트리거 비활성화 | CLAUDE.md 포인터 | 실제 구현 경로로 `scripts/execute.py`(Codex) 채택 확정 — 두 실행 경로 혼동 방지 |
+| 2026-07-20 | 아키텍처 전면 변경: 5개 에이전트를 "코드 구현"에서 "phase/step 계획 작성"으로 재정의, qa는 계획 검증+실행 후 코드 검증 겸임, `phase-planning` 스킬 신규 추가(execute.py 스키마), 오케스트레이터가 계획 확정 후 사용자 확인을 받아 `execute.py`를 직접 실행하도록 재작성 | 전체 (agents 5개, phase-planning 스킬 신규, finsight-build 재작성) | Claude 팀은 계획·검증, Codex는 실제 구현을 맡는 역할 분담으로 확정 |

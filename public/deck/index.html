@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  deck-stage section { font-family: 'Inter', -apple-system, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  .mono { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+  .disp { letter-spacing: -0.03em; font-weight: 400; line-height: 1.02; }
+  a { color: #0052ff; text-decoration: none; }
+  a:hover { color: #003ecc; }
+</style>
+</helmet>
+<x-import component-from-global-scope="deck-stage" from="./deck-stage.js" width="1920" height="1080" hint-size="100%,100%">
+
+<section data-label="Cover" data-speaker-notes="Open the demo. Sightline is an AI financial intelligence layer for finance teams. One line: it turns raw transaction data into insight the moment it happens." style="background:#0a0b0d; color:#fff; display:flex; flex-direction:row; align-items:center; padding:0 100px; gap:80px;">
+  <div style="flex:1; display:flex; flex-direction:column; gap:40px;">
+    <div style="display:flex; align-items:center; gap:12px;">
+      <div style="width:28px; height:28px; border-radius:9999px; background:#0052ff;"></div>
+      <span style="font-size:24px; font-weight:600; letter-spacing:-0.02em;">Sightline</span>
+    </div>
+    <div style="display:inline-flex; align-self:flex-start; padding:8px 16px; border-radius:100px; background:#16181c; font-size:13px; font-weight:600; letter-spacing:0.08em; color:#a8acb3;">AI FINANCIAL INTELLIGENCE</div>
+    <h1 class="disp" style="font-size:88px; margin:0; letter-spacing:-0.035em;">Financial insight,<br>the moment it happens.</h1>
+    <p style="font-size:32px; line-height:1.45; color:#a8acb3; margin:0; max-width:640px;">An AI layer that reads every transaction, flags what matters, and answers the questions your finance team hasn't asked yet.</p>
+    <div style="display:flex; gap:16px; margin-top:8px;">
+      <div style="display:inline-flex; align-items:center; height:56px; padding:0 32px; border-radius:100px; background:#0052ff; color:#fff; font-size:16px; font-weight:600;">Start the tour</div>
+      <div style="display:inline-flex; align-items:center; height:56px; padding:0 32px; border-radius:100px; background:transparent; border:1px solid #33363c; color:#fff; font-size:16px; font-weight:600;">Book a demo</div>
+    </div>
+  </div>
+  <div style="flex:0 0 620px; display:flex; flex-direction:column; align-items:flex-end; gap:0; position:relative;">
+    <div style="width:600px; background:#16181c; border-radius:24px; padding:32px; box-shadow:0 40px 80px -20px rgba(0,0,0,.6);">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:24px;">
+        <span style="font-size:18px; font-weight:600;">Insight feed</span>
+        <span style="font-size:13px; color:#05b169; display:inline-flex; align-items:center; gap:8px;"><span style="width:8px;height:8px;border-radius:9999px;background:#05b169;display:inline-block;"></span>Live</span>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:16px;">
+        <div style="background:#0a0b0d; border-radius:16px; padding:20px; display:flex; gap:16px; align-items:flex-start;">
+          <div style="width:36px;height:36px;border-radius:9999px;background:rgba(207,32,47,.15);color:#cf202f;display:flex;align-items:center;justify-content:center;flex:0 0 36px;font-size:18px;font-weight:600;">!</div>
+          <div><div style="font-size:16px;font-weight:600;margin-bottom:4px;">Vendor spend up 34% MoM</div><div style="font-size:14px;color:#a8acb3;">Cloud infrastructure — driven by 2 new contracts</div></div>
+        </div>
+        <div style="background:#0a0b0d; border-radius:16px; padding:20px; display:flex; gap:16px; align-items:flex-start;">
+          <div style="width:36px;height:36px;border-radius:9999px;background:rgba(5,177,105,.15);color:#05b169;display:flex;align-items:center;justify-content:center;flex:0 0 36px;font-size:18px;">↑</div>
+          <div><div style="font-size:16px;font-weight:600;margin-bottom:4px;">Runway extended to 22 months</div><div style="font-size:14px;color:#a8acb3;">Net burn improved on faster collections</div></div>
+        </div>
+        <div style="background:#0a0b0d; border-radius:16px; padding:20px; display:flex; gap:16px; align-items:flex-start;">
+          <div style="width:36px;height:36px;border-radius:9999px;background:rgba(0,82,255,.15);color:#5b8bff;display:flex;align-items:center;justify-content:center;flex:0 0 36px;font-size:18px;">✦</div>
+          <div><div style="font-size:16px;font-weight:600;margin-bottom:4px;">3 duplicate invoices detected</div><div style="font-size:14px;color:#a8acb3;">$18,400 flagged for review</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section data-label="Problem" data-speaker-notes="The problem: finance teams have more data than ever but insight arrives late — in month-end decks, after the money's already spent. Set up the gap we close." style="background:#fff; color:#0a0b0d; display:flex; flex-direction:column; justify-content:center; padding:100px 100px 80px;">
+  <div style="display:inline-flex; align-self:flex-start; padding:8px 16px; border-radius:100px; background:#eef0f3; font-size:13px; font-weight:600; letter-spacing:0.08em; color:#5b616e; margin-bottom:40px;">THE GAP</div>
+  <h2 class="disp" style="font-size:64px; margin:0 0 64px; max-width:1200px;">Finance teams have more data than ever — and less time to make sense of it.</h2>
+  <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:24px;">
+    <div style="border:1px solid #dee1e6; border-radius:24px; padding:32px;">
+      <div class="mono" style="font-size:52px; font-weight:500; margin-bottom:16px; letter-spacing:-0.02em;">17 days</div>
+      <div style="font-size:20px; color:#5b616e; line-height:1.5;">Average lag between a spending anomaly and someone noticing it.</div>
+    </div>
+    <div style="border:1px solid #dee1e6; border-radius:24px; padding:32px;">
+      <div class="mono" style="font-size:52px; font-weight:500; margin-bottom:16px; letter-spacing:-0.02em;">73%</div>
+      <div style="font-size:20px; color:#5b616e; line-height:1.5;">Of an analyst's week spent assembling reports, not reading them.</div>
+    </div>
+    <div style="border:1px solid #dee1e6; border-radius:24px; padding:32px;">
+      <div class="mono" style="font-size:52px; font-weight:500; margin-bottom:16px; letter-spacing:-0.02em;">6+ tools</div>
+      <div style="font-size:20px; color:#5b616e; line-height:1.5;">Stitched together before a single number can be trusted.</div>
+    </div>
+  </div>
+</section>
+
+<section data-label="Overview" data-speaker-notes="What Sightline is: one AI layer that sits on top of your existing financial data — ledgers, banks, billing — and produces continuous insight. Three pillars: detect, forecast, ask." style="background:#f7f7f7; color:#0a0b0d; display:flex; flex-direction:column; justify-content:center; padding:100px 100px 80px;">
+  <h2 class="disp" style="font-size:64px; margin:0 0 24px; max-width:1100px;">One intelligence layer over the financial data you already have.</h2>
+  <p style="font-size:28px; color:#5b616e; margin:0 0 64px; max-width:900px; line-height:1.5;">Sightline connects to your ledger, banks, and billing — then works continuously across three jobs.</p>
+  <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:24px;">
+    <div style="background:#fff; border-radius:24px; padding:32px; display:flex; flex-direction:column; gap:20px;">
+      <div style="width:48px;height:48px;border-radius:9999px;background:#eef0f3;display:flex;align-items:center;justify-content:center;font-size:22px;">◎</div>
+      <div style="font-size:24px; font-weight:600;">Detect</div>
+      <div style="font-size:19px; color:#5b616e; line-height:1.55;">Anomalies, duplicates, and drift surfaced the moment they appear in the data.</div>
+    </div>
+    <div style="background:#fff; border-radius:24px; padding:32px; display:flex; flex-direction:column; gap:20px;">
+      <div style="width:48px;height:48px;border-radius:9999px;background:#eef0f3;display:flex;align-items:center;justify-content:center;font-size:22px;">◈</div>
+      <div style="font-size:24px; font-weight:600;">Forecast</div>
+      <div style="font-size:19px; color:#5b616e; line-height:1.55;">Cash flow and runway projected forward, updated with every transaction.</div>
+    </div>
+    <div style="background:#fff; border-radius:24px; padding:32px; display:flex; flex-direction:column; gap:20px;">
+      <div style="width:48px;height:48px;border-radius:9999px;background:#eef0f3;display:flex;align-items:center;justify-content:center;font-size:22px;">✦</div>
+      <div style="font-size:24px; font-weight:600;">Ask</div>
+      <div style="font-size:19px; color:#5b616e; line-height:1.55;">Any question about your finances, answered in plain language with the numbers behind it.</div>
+    </div>
+  </div>
+</section>
+
+<section data-label="AI Insights" data-speaker-notes="This is the heart of the demo. The insight engine reads every transaction and ranks what a human should actually look at. Emphasize: it's not a dashboard you monitor — it tells you what changed." style="background:#0a0b0d; color:#fff; display:flex; flex-direction:column; justify-content:center; padding:100px;">
+  <div style="display:inline-flex; align-self:flex-start; padding:8px 16px; border-radius:100px; background:#16181c; font-size:13px; font-weight:600; letter-spacing:0.08em; color:#a8acb3; margin-bottom:40px;">THE ENGINE</div>
+  <h2 class="disp" style="font-size:72px; margin:0 0 32px; max-width:1200px;">You don't monitor a dashboard.<br>Sightline tells you what changed.</h2>
+  <p style="font-size:30px; color:#a8acb3; margin:0; max-width:1000px; line-height:1.5;">The insight engine reads every transaction as it lands, scores it against your history and plan, and ranks the handful of things a person should actually look at today.</p>
+</section>
+
+<section data-label="Insight feed" data-speaker-notes="Live insight feed — the primary product surface. Each card is a ranked insight with a why and a suggested action. Walk through anomaly, opportunity, and hygiene examples." style="background:#fff; color:#0a0b0d; display:flex; flex-direction:row; padding:100px; gap:72px; align-items:center;">
+  <div style="flex:0 0 460px; display:flex; flex-direction:column; gap:28px;">
+    <h2 class="disp" style="font-size:56px; margin:0;">A ranked feed, not a wall of charts.</h2>
+    <p style="font-size:24px; color:#5b616e; margin:0; line-height:1.55;">Every insight carries the reason it surfaced and a suggested next step — so the team spends time deciding, not digging.</p>
+    <div style="display:flex; flex-direction:column; gap:16px; margin-top:8px;">
+      <div style="display:flex; gap:12px; align-items:center; font-size:20px;"><span style="width:10px;height:10px;border-radius:9999px;background:#cf202f;"></span>Risk — needs attention now</div>
+      <div style="display:flex; gap:12px; align-items:center; font-size:20px;"><span style="width:10px;height:10px;border-radius:9999px;background:#05b169;"></span>Opportunity — worth acting on</div>
+      <div style="display:flex; gap:12px; align-items:center; font-size:20px;"><span style="width:10px;height:10px;border-radius:9999px;background:#0052ff;"></span>Hygiene — quick cleanup</div>
+    </div>
+  </div>
+  <div style="flex:1; display:flex; flex-direction:column; gap:16px;">
+    <div style="border:1px solid #dee1e6; border-left:4px solid #cf202f; border-radius:16px; padding:24px 28px; display:flex; justify-content:space-between; align-items:center;">
+      <div><div style="font-size:22px; font-weight:600; margin-bottom:6px;">Vendor spend up 34% month over month</div><div style="font-size:17px; color:#5b616e;">Cloud infrastructure · driven by 2 new contracts</div></div>
+      <div class="mono" style="font-size:22px; color:#cf202f; font-weight:500;">+$42.1K</div>
+    </div>
+    <div style="border:1px solid #dee1e6; border-left:4px solid #05b169; border-radius:16px; padding:24px 28px; display:flex; justify-content:space-between; align-items:center;">
+      <div><div style="font-size:22px; font-weight:600; margin-bottom:6px;">Collections 9 days faster this quarter</div><div style="font-size:17px; color:#5b616e;">Runway extended · net burn down 11%</div></div>
+      <div class="mono" style="font-size:22px; color:#05b169; font-weight:500;">+22 mo</div>
+    </div>
+    <div style="border:1px solid #dee1e6; border-left:4px solid #0052ff; border-radius:16px; padding:24px 28px; display:flex; justify-content:space-between; align-items:center;">
+      <div><div style="font-size:22px; font-weight:600; margin-bottom:6px;">3 duplicate invoices detected</div><div style="font-size:17px; color:#5b616e;">Same PO across two vendors · flagged for review</div></div>
+      <div class="mono" style="font-size:22px; color:#0052ff; font-weight:500;">$18.4K</div>
+    </div>
+    <div style="border:1px solid #dee1e6; border-left:4px solid #05b169; border-radius:16px; padding:24px 28px; display:flex; justify-content:space-between; align-items:center;">
+      <div><div style="font-size:22px; font-weight:600; margin-bottom:6px;">Idle cash could earn 4.9% in treasury</div><div style="font-size:17px; color:#5b616e;">$1.2M above 60-day operating floor</div></div>
+      <div class="mono" style="font-size:22px; color:#05b169; font-weight:500;">+$58K/yr</div>
+    </div>
+  </div>
+</section>
+
+<section data-label="Anomaly" data-speaker-notes="Anomaly detection in depth. Show the baseline band and the point that broke out. The model learns each account's normal rhythm — no thresholds to configure." style="background:#f7f7f7; color:#0a0b0d; display:flex; flex-direction:row; padding:100px; gap:72px; align-items:center;">
+  <div style="flex:1; background:#fff; border-radius:24px; padding:40px; border:1px solid #dee1e6;">
+    <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:32px;">
+      <span style="font-size:20px; font-weight:600;">Cloud infrastructure · daily spend</span>
+      <span class="mono" style="font-size:16px; color:#7c828a;">last 30 days</span>
+    </div>
+    <svg viewBox="0 0 620 280" width="100%" style="display:block;" preserveAspectRatio="none">
+      <path d="M0,210 L620,150 L620,190 L0,240 Z" fill="#eef0f3"></path>
+      <polyline points="0,225 60,220 120,228 180,215 240,222 300,210 360,205 420,208 480,198 540,120 600,70" fill="none" stroke="#0a0b0d" stroke-width="3"></polyline>
+      <circle cx="540" cy="120" r="7" fill="#cf202f"></circle>
+      <circle cx="600" cy="70" r="8" fill="#cf202f"></circle>
+    </svg>
+    <div style="display:flex; gap:32px; margin-top:28px; font-size:16px; color:#5b616e;">
+      <span style="display:flex; align-items:center; gap:8px;"><span style="width:20px;height:3px;background:#0a0b0d;display:inline-block;"></span>Actual</span>
+      <span style="display:flex; align-items:center; gap:8px;"><span style="width:20px;height:12px;background:#eef0f3;display:inline-block;border-radius:2px;"></span>Expected range</span>
+      <span style="display:flex; align-items:center; gap:8px;"><span style="width:10px;height:10px;border-radius:9999px;background:#cf202f;display:inline-block;"></span>Anomaly</span>
+    </div>
+  </div>
+  <div style="flex:0 0 440px; display:flex; flex-direction:column; gap:24px;">
+    <div style="display:inline-flex; align-self:flex-start; padding:8px 16px; border-radius:100px; background:#eef0f3; font-size:13px; font-weight:600; letter-spacing:0.08em; color:#5b616e;">DETECT</div>
+    <h2 class="disp" style="font-size:56px; margin:0;">It learns normal, so you don't set thresholds.</h2>
+    <p style="font-size:24px; color:#5b616e; margin:0; line-height:1.55;">Sightline models the natural rhythm of every account and vendor. When spend breaks the pattern, it surfaces — with the likely cause attached.</p>
+  </div>
+</section>
+
+<section data-label="Forecast" data-speaker-notes="Cash flow forecasting. The line is projected forward with a confidence band that updates on every transaction. Scenario chips let you stress-test hiring or a raise." style="background:#fff; color:#0a0b0d; display:flex; flex-direction:row; padding:100px; gap:72px; align-items:center;">
+  <div style="flex:0 0 440px; display:flex; flex-direction:column; gap:24px;">
+    <div style="display:inline-flex; align-self:flex-start; padding:8px 16px; border-radius:100px; background:#eef0f3; font-size:13px; font-weight:600; letter-spacing:0.08em; color:#5b616e;">FORECAST</div>
+    <h2 class="disp" style="font-size:56px; margin:0;">Runway that updates with every dollar.</h2>
+    <p style="font-size:24px; color:#5b616e; margin:0; line-height:1.55;">The forecast redraws as cash moves — no month-end rebuild. Toggle a scenario to see the impact before you commit.</p>
+    <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:8px;">
+      <span style="padding:10px 20px; border-radius:100px; background:#0052ff; color:#fff; font-size:16px; font-weight:600;">Base case</span>
+      <span style="padding:10px 20px; border-radius:100px; background:#eef0f3; color:#0a0b0d; font-size:16px; font-weight:600;">+8 hires</span>
+      <span style="padding:10px 20px; border-radius:100px; background:#eef0f3; color:#0a0b0d; font-size:16px; font-weight:600;">Series B</span>
+    </div>
+  </div>
+  <div style="flex:1; background:#f7f7f7; border-radius:24px; padding:40px;">
+    <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px;">
+      <span style="font-size:20px; font-weight:600;">Projected cash balance</span>
+      <span class="mono" style="font-size:16px; color:#7c828a;">24-month horizon</span>
+    </div>
+    <div class="mono" style="font-size:44px; font-weight:500; letter-spacing:-0.02em; margin-bottom:24px;">$8.4M <span style="font-size:20px; color:#05b169;">runway 22 mo</span></div>
+    <svg viewBox="0 0 620 240" width="100%" style="display:block;" preserveAspectRatio="none">
+      <path d="M0,60 L300,110 L620,150 L620,205 L300,140 L0,80 Z" fill="rgba(0,82,255,.10)"></path>
+      <polyline points="0,70 100,88 200,100 300,125" fill="none" stroke="#0a0b0d" stroke-width="3"></polyline>
+      <polyline points="300,125 420,145 540,168 620,178" fill="none" stroke="#0052ff" stroke-width="3" stroke-dasharray="2 8" stroke-linecap="round"></polyline>
+      <line x1="300" y1="20" x2="300" y2="230" stroke="#dee1e6" stroke-width="1.5" stroke-dasharray="4 6"></line>
+    </svg>
+    <div style="display:flex; gap:32px; margin-top:20px; font-size:16px; color:#5b616e;">
+      <span style="display:flex; align-items:center; gap:8px;"><span style="width:20px;height:3px;background:#0a0b0d;display:inline-block;"></span>Actual</span>
+      <span style="display:flex; align-items:center; gap:8px;"><span style="width:20px;height:3px;background:#0052ff;display:inline-block;"></span>Projected</span>
+      <span style="display:flex; align-items:center; gap:8px;"><span style="width:14px;height:12px;background:rgba(0,82,255,.10);display:inline-block;border-radius:2px;"></span>Confidence</span>
+    </div>
+  </div>
+</section>
+
+<section data-label="Ask" data-speaker-notes="Natural-language queries. Type a question, get an answer with the query and figures behind it. This is where non-finance stakeholders self-serve. Read the example exchange aloud." style="background:#0a0b0d; color:#fff; display:flex; flex-direction:row; padding:100px; gap:72px; align-items:center;">
+  <div style="flex:0 0 460px; display:flex; flex-direction:column; gap:24px;">
+    <div style="display:inline-flex; align-self:flex-start; padding:8px 16px; border-radius:100px; background:#16181c; font-size:13px; font-weight:600; letter-spacing:0.08em; color:#a8acb3;">ASK</div>
+    <h2 class="disp" style="font-size:56px; margin:0;">Ask your finances a question.</h2>
+    <p style="font-size:24px; color:#a8acb3; margin:0; line-height:1.55;">Plain-language answers, grounded in your ledger — with the exact figures and the query shown, so every number is auditable.</p>
+  </div>
+  <div style="flex:1; display:flex; flex-direction:column; gap:16px;">
+    <div style="align-self:flex-end; max-width:70%; background:#0052ff; color:#fff; border-radius:20px 20px 4px 20px; padding:20px 24px; font-size:22px;">Why did gross margin drop last month?</div>
+    <div style="align-self:flex-start; max-width:82%; background:#16181c; border-radius:20px 20px 20px 4px; padding:24px 28px;">
+      <div style="font-size:22px; line-height:1.5; margin-bottom:20px;">Gross margin fell <span class="mono" style="color:#cf202f;">4.2 pts</span> to <span class="mono">61.3%</span>. The driver was a <span class="mono" style="color:#cf202f;">+$42K</span> jump in cloud infrastructure while revenue held flat.</div>
+      <div style="background:#0a0b0d; border-radius:12px; padding:16px 20px; display:flex; flex-direction:column; gap:10px;">
+        <div style="display:flex; justify-content:space-between; font-size:16px;"><span style="color:#a8acb3;">COGS · infrastructure</span><span class="mono" style="color:#cf202f;">+$42,100</span></div>
+        <div style="display:flex; justify-content:space-between; font-size:16px;"><span style="color:#a8acb3;">Revenue</span><span class="mono">$1.94M · flat</span></div>
+        <div style="display:flex; justify-content:space-between; font-size:16px;"><span style="color:#a8acb3;">Margin impact</span><span class="mono" style="color:#cf202f;">−4.2 pts</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section data-label="Impact" data-speaker-notes="The impact numbers. These are the outcomes customers see in the first quarter. Anchor the ROI story here before pricing." style="background:#f7f7f7; color:#0a0b0d; display:flex; flex-direction:column; justify-content:center; padding:100px 100px 80px;">
+  <h2 class="disp" style="font-size:64px; margin:0 0 64px; max-width:1000px;">What teams see in the first quarter.</h2>
+  <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:24px;">
+    <div style="display:flex; flex-direction:column; gap:12px;">
+      <div class="mono" style="font-size:80px; font-weight:500; letter-spacing:-0.03em; line-height:1;">17→1<span style="font-size:36px;"> day</span></div>
+      <div style="font-size:22px; color:#5b616e; line-height:1.45;">From anomaly to awareness — same-day, not month-end.</div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:12px;">
+      <div class="mono" style="font-size:80px; font-weight:500; letter-spacing:-0.03em; line-height:1;">9<span style="font-size:36px;"> hrs/wk</span></div>
+      <div style="font-size:22px; color:#5b616e; line-height:1.45;">Analyst time returned per person, off report assembly.</div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:12px;">
+      <div class="mono" style="font-size:80px; font-weight:500; letter-spacing:-0.03em; line-height:1; color:#05b169;">$310K</div>
+      <div style="font-size:22px; color:#5b616e; line-height:1.45;">Median leakage recovered — duplicates, idle cash, drift.</div>
+    </div>
+  </div>
+</section>
+
+<section data-label="Security" data-speaker-notes="Trust and security — essential for a fintech buyer. Read-only by default, SOC 2 and encryption, every AI answer cites its source rows. Keep this crisp." style="background:#fff; color:#0a0b0d; display:flex; flex-direction:column; justify-content:center; padding:100px 100px 80px;">
+  <div style="display:inline-flex; align-self:flex-start; padding:8px 16px; border-radius:100px; background:#eef0f3; font-size:13px; font-weight:600; letter-spacing:0.08em; color:#5b616e; margin-bottom:40px;">TRUST</div>
+  <h2 class="disp" style="font-size:64px; margin:0 0 64px; max-width:1100px;">Built to the standard your auditors already expect.</h2>
+  <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:24px;">
+    <div style="border:1px solid #dee1e6; border-radius:24px; padding:32px;">
+      <div style="font-size:24px; font-weight:600; margin-bottom:12px;">Read-only by default</div>
+      <div style="font-size:19px; color:#5b616e; line-height:1.55;">Sightline observes your data — it never moves money or writes to your ledger.</div>
+    </div>
+    <div style="border:1px solid #dee1e6; border-radius:24px; padding:32px;">
+      <div style="font-size:24px; font-weight:600; margin-bottom:12px;">SOC 2 Type II · AES-256</div>
+      <div style="font-size:19px; color:#5b616e; line-height:1.55;">Encrypted in transit and at rest, with regional data residency options.</div>
+    </div>
+    <div style="border:1px solid #dee1e6; border-radius:24px; padding:32px;">
+      <div style="font-size:24px; font-weight:600; margin-bottom:12px;">Every answer is cited</div>
+      <div style="font-size:19px; color:#5b616e; line-height:1.55;">AI responses link to the source rows, so any number can be traced and defended.</div>
+    </div>
+  </div>
+</section>
+
+<section data-label="Close" data-speaker-notes="Close. Reiterate the one-liner and make the ask — a working pilot on their data in two weeks. Hand off to Q&amp;A." style="background:#0a0b0d; color:#fff; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; padding:100px;">
+  <div style="display:flex; align-items:center; gap:12px; margin-bottom:40px;">
+    <div style="width:28px; height:28px; border-radius:9999px; background:#0052ff;"></div>
+    <span style="font-size:24px; font-weight:600; letter-spacing:-0.02em;">Sightline</span>
+  </div>
+  <h2 class="disp" style="font-size:80px; margin:0 0 32px; max-width:1300px;">See your finances the moment they change.</h2>
+  <p style="font-size:30px; color:#a8acb3; margin:0 0 48px; max-width:820px; line-height:1.5;">We'll stand up a pilot on your own data in two weeks — insight feed live from day one.</p>
+  <div style="display:flex; gap:16px;">
+    <div style="display:inline-flex; align-items:center; height:56px; padding:0 32px; border-radius:100px; background:#0052ff; color:#fff; font-size:16px; font-weight:600;">Start a pilot</div>
+    <div style="display:inline-flex; align-items:center; height:56px; padding:0 32px; border-radius:100px; background:transparent; border:1px solid #33363c; color:#fff; font-size:16px; font-weight:600;">sightline.com</div>
+  </div>
+</section>
+
+</x-import>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,8 @@
+{
+  "phases": [
+    { "dir": "0-db-schema", "status": "pending" },
+    { "dir": "1-core-services", "status": "pending" },
+    { "dir": "2-api-routes", "status": "pending" },
+    { "dir": "3-frontend", "status": "pending" }
+  ]
+}

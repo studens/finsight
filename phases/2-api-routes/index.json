@@ -1,0 +1,13 @@
+{
+  "project": "finsight",
+  "phase": "api-routes",
+  "steps": [
+    { "step": 0, "name": "middleware.ts — 세션 기반 라우팅 게이팅", "status": "pending" },
+    { "step": 1, "name": "Supabase 읽기 클라이언트 + RLS 읽기 쿼리 헬퍼", "status": "pending" },
+    { "step": 2, "name": "service-role 클라이언트 + supabase-admin 쓰기 서비스 (소유권 직접 검증)", "status": "pending" },
+    { "step": 3, "name": "POST /api/upload — 파싱/마스킹/컬럼매핑 추론", "status": "pending" },
+    { "step": 4, "name": "POST /api/analyze — Free 요약 생성/저장", "status": "pending" },
+    { "step": 5, "name": "GET /api/reports/[analysisId]/[reportType] — Premium 지연 생성 + 페이월 게이팅", "status": "pending" },
+    { "step": 6, "name": "POST /api/webhooks/polar — 스텁 (polar-billing phase에서 구현)", "status": "pending" }
+  ]
+}
