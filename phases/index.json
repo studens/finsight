@@ -8,7 +8,8 @@
     },
     {
       "dir": "1-core-services",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-07-20T17:11:53+0900"
     },
     {
       "dir": "2-api-routes",
