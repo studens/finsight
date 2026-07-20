@@ -13,7 +13,10 @@
     {
       "step": 1,
       "name": "subscriptions 테이블 + RLS 마이그레이션",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-07-20T16:44:51+0900",
+      "summary": "subscriptions 엔타이틀먼트 테이블과 사용자별 SELECT 전용 RLS 정책을 단일 마이그레이션으로 생성하고 원격 적용함",
+      "completed_at": "2026-07-20T16:45:53+0900"
     },
     {
       "step": 2,
