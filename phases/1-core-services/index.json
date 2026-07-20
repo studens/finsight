@@ -16,7 +16,7 @@
       "status": "completed",
       "started_at": "2026-07-20T16:56:26+0900",
       "summary": "UTF-8과 CP949 CSV를 감지·디코딩해 RawRow로 인메모리 파싱하는 서비스를 Vitest로 구현했다.",
-      "completed_at": "2026-07-20T16:58:16+0900"
+      "completed_at": "2026-07-20T16:59:22+0900"
     },
     {
       "step": 2,
