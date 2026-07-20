@@ -45,7 +45,10 @@
     {
       "step": 5,
       "name": "GET /api/reports/[analysisId]/[reportType] — Premium 지연 생성 + 페이월 게이팅",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-07-20T17:34:29+0900",
+      "summary": "소유권·구독 게이팅 후 캐시 조회와 Premium 리포트 지연 생성·저장을 수행하는 GET API를 TDD로 구현",
+      "completed_at": "2026-07-20T17:36:44+0900"
     },
     {
       "step": 6,
