@@ -2,8 +2,23 @@
   "project": "finsight",
   "phase": "db-schema",
   "steps": [
-    { "step": 0, "name": "analyses 테이블 + RLS 마이그레이션", "status": "pending" },
-    { "step": 1, "name": "subscriptions 테이블 + RLS 마이그레이션", "status": "pending" },
-    { "step": 2, "name": "advisors 보안 점검 및 TypeScript 타입 생성", "status": "pending" }
-  ]
+    {
+      "step": 0,
+      "name": "analyses 테이블 + RLS 마이그레이션",
+      "status": "blocked",
+      "started_at": "2026-07-20T16:34:01+0900",
+      "blocked_reason": "Supabase MCP 서버가 현재 세션에 연결되어 있지 않아 필수 list_tables 및 apply_migration 호출과 원격 AC 검증을 수행할 수 없음"
+    },
+    {
+      "step": 1,
+      "name": "subscriptions 테이블 + RLS 마이그레이션",
+      "status": "pending"
+    },
+    {
+      "step": 2,
+      "name": "advisors 보안 점검 및 TypeScript 타입 생성",
+      "status": "pending"
+    }
+  ],
+  "created_at": "2026-07-20T16:34:01+0900"
 }
