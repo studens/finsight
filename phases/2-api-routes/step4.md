@@ -14,9 +14,12 @@ ARCHITECTURE.md flow 2는 analyze가 "마스킹된 데이터"를 클라이언트
 1. `getSessionUser()` — 없으면 `401 { code: "UNAUTHORIZED" }`.
 2. `file`/`mapping` 파싱. 누락·형식오류면 `400 { code: "BAD_REQUEST" }`. `mapping`은 `ConfirmedMapping = { date, merchant, amount, category }`로 검증(필수 필드 존재).
 3. `parseCsv(buffer)` → `maskPii(parsed)` → `MaskedDataset`.
-4. `generateFreeSummary({ rows: masked.rows, mapping })` → `FreeSummary`.
-5. `insertAnalysis({ userId: user.id, maskedTransactions: masked.rows, freeSummary })` → `{ id }`.
-6. 응답 `200`: `{ analysisId, freeSummary }`.
+4. **매핑 허용 목록 적용(추가 방어)**: `masked.rows`의 각 행에서 `mapping`에 명시된 4개 컬럼(`date`/`merchant`/`amount`/`category`)의 값만 골라 새 행 배열을 만든다. 그 외 컬럼(카드/계좌처럼 마스킹된 컬럼이든, 키워드 목록에 없어 pii-masking이 놓쳤을 수도 있는 미지의 컬럼이든)은 이 시점부터 완전히 버리고 이후 어떤 호출에도 전달하지 않는다.
+   - 이유: pii-masking의 신원 컬럼 제외는 헤더 키워드 매칭 기반이라, 은행/카드사마다 다른 비표준 헤더(예: 키워드 목록에 없는 전화번호 컬럼명)는 걸러지지 않을 수 있다. 사용자가 이미 확인한 4개 컬럼만 통과시키는 허용 목록 방식은 키워드 인식이 불완전해도 원천적으로 안전하다.
+   - 이 프로젝션은 반드시 `maskPii`의 출력(`MaskedRow[]`)에서만 파생되어야 한다 — 원본 파싱 결과나 클라이언트 입력에서 직접 만들지 않는다.
+5. `generateFreeSummary({ rows: <4번의 프로젝션 결과>, mapping })` → `FreeSummary`.
+6. `insertAnalysis({ userId: user.id, maskedTransactions: <4번의 프로젝션 결과>, freeSummary })` → `{ id }`. (이렇게 저장하면 `analyses.masked_transactions`에는 애초에 4개 매핑 컬럼만 남으므로, 이 값을 나중에 읽는 Premium 리포트(`GET /api/reports/*`, step5)도 별도 수정 없이 자동으로 같은 보호를 받는다.)
+7. 응답 `200`: `{ analysisId, freeSummary }`.
 
 계약 인용 (core-services):
 - `generateFreeSummary(input: { rows: MaskedRow[]; mapping: ConfirmedMapping }): Promise<FreeSummary>`.
@@ -37,3 +40,4 @@ CRITICAL 규칙 (이 step에서 반드시 지킴):
 - [ ] `insertAnalysis` 호출 시 `userId`가 클라이언트 입력이 아니라 `getSessionUser()`가 반환한 세션 사용자 id로 세팅됨을 확인하는 테스트가 통과한다.
 - [ ] 세션 없음 → `401 { code: "UNAUTHORIZED" }`, `file`/`mapping` 누락·형식오류 → `400 { code: "BAD_REQUEST" }` 테스트가 통과한다.
 - [ ] (원본 미보관 CRITICAL) 라우트 코드에 원본 CSV를 디스크·Storage·로그에 남기는 호출이 없음을 grep으로 확인한다. DB에는 `insertAnalysis`를 통해 마스킹 요약만 저장된다.
+- [ ] (허용 목록 CRITICAL) `mapping`에 없는 컬럼(예: 키워드 목록에 없는 미지의 전화번호 헤더를 포함한 테스트 픽스처)이 `generateFreeSummary` 호출 인자와 `insertAnalysis`의 `maskedTransactions` 인자 양쪽 모두에 나타나지 않음을 확인하는 테스트가 통과한다 — 즉 `date`/`merchant`/`amount`/`category` 4개 키 외의 필드가 전달·저장되지 않는다.
