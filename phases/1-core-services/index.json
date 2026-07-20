@@ -21,7 +21,10 @@
     {
       "step": 2,
       "name": "pii-masking 서비스 — 카드/계좌 마스킹 + PII 컬럼 제외",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-07-20T16:59:22+0900",
+      "summary": "카드·계좌번호는 뒤 4자리만 남겨 마스킹하고 신원 식별 컬럼은 제거하는 PII 경계 서비스를 구현했다.",
+      "completed_at": "2026-07-20T17:01:42+0900"
     },
     {
       "step": 3,
