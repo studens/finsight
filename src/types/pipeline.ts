@@ -82,10 +82,23 @@ export type AnomalyReport = {
 
 export type SavingsReport = {
   type: "savings_suggestions"
+  summary: string
+  suggestions: {
+    title: string
+    description: string
+    estimatedMonthlySavings: number
+  }[]
 }
 
 export type BudgetReport = {
   type: "budget_recommendation"
+  summary: string
+  categories: {
+    category: string
+    currentSpending: number
+    recommendedBudget: number
+    reason: string
+  }[]
 }
 
 export type PremiumReport =
