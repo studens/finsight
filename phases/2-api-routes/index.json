@@ -40,7 +40,7 @@
       "status": "completed",
       "started_at": "2026-07-20T17:31:51+0900",
       "summary": "확정 매핑 allowlist로 마스킹 거래를 제한해 Free 요약만 생성·저장하는 분석 API를 TDD로 구현",
-      "completed_at": "2026-07-20T17:33:52+0900"
+      "completed_at": "2026-07-20T17:34:29+0900"
     },
     {
       "step": 5,
