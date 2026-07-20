@@ -21,7 +21,10 @@
     {
       "step": 2,
       "name": "advisors 보안 점검 및 TypeScript 타입 생성",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-07-20T16:46:45+0900",
+      "summary": "Supabase 보안 어드바이저와 SELECT 전용 RLS 정책을 검증하고 확정 스키마의 TypeScript 타입을 생성함",
+      "completed_at": "2026-07-20T16:50:00+0900"
     }
   ],
   "created_at": "2026-07-20T16:34:01+0900"
