@@ -4,9 +4,11 @@
 
 Supabase(Postgres)에 구독 엔타이틀먼트를 저장하는 `subscriptions` 테이블을 생성하는 마이그레이션을 작성·적용한다. **이번 phase는 엔타이틀먼트 스키마만 만든다.** Polar 실제 결제 연동(체크아웃/웹훅)은 후속 `polar-billing` phase에서 구현하므로, 지금 값을 채울 수 없는 Polar 전용 컬럼(`customer_id`, `current_period_end` 등)은 만들지 않는다 (ADR-006).
 
+**대상 Supabase 프로젝트**: `project_id: peewjgbhqpkysitzqjum` (이름: finsight, 리전: ap-northeast-2). 모든 Supabase MCP 도구 호출에 이 project_id를 사용한다.
+
 절차:
-1. Supabase MCP `list_tables`로 현재 스키마를 확인한다.
-2. 아래 DDL을 담은 마이그레이션 파일을 `supabase/migrations/<timestamp>_create_subscriptions.sql`에 저장하고, 같은 SQL을 Supabase MCP `apply_migration`(name: `create_subscriptions`)으로 원격에 적용한다.
+1. Supabase MCP `list_tables`(project_id: `peewjgbhqpkysitzqjum`)로 현재 스키마를 확인한다.
+2. 아래 DDL을 담은 마이그레이션 파일을 `supabase/migrations/<timestamp>_create_subscriptions.sql`에 저장하고, 같은 SQL을 Supabase MCP `apply_migration`(project_id: `peewjgbhqpkysitzqjum`, name: `create_subscriptions`)으로 원격에 적용한다.
 3. **테이블 생성 DDL과 RLS 활성화·정책을 하나의 마이그레이션에 함께 포함**한다.
 
 ### 컬럼 정의 (`subscriptions`)

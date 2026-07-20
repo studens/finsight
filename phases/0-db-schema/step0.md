@@ -4,9 +4,11 @@
 
 Supabase(Postgres)에 `analyses` 테이블을 생성하는 마이그레이션을 작성·적용한다. 이 테이블은 마스킹된 거래 데이터와 구조화된 집계값만 저장하며, 원본 CSV/PII는 절대 저장하지 않는다.
 
+**대상 Supabase 프로젝트**: `project_id: peewjgbhqpkysitzqjum` (이름: finsight, 리전: ap-northeast-2). 모든 Supabase MCP 도구 호출(`list_tables`/`apply_migration`/`get_advisors`/`generate_typescript_types`)에 이 project_id를 사용한다.
+
 절차:
-1. Supabase MCP `list_tables`로 현재 스키마를 먼저 확인한다 (이미 `analyses`가 있으면 컬럼/제약을 아래 정의와 대조해 부족분만 반영).
-2. 아래 DDL을 담은 마이그레이션 파일을 `supabase/migrations/<timestamp>_create_analyses.sql`에 저장한다(리포지토리에 버전 관리되도록). 같은 SQL을 Supabase MCP `apply_migration`(name: `create_analyses`)으로 원격에 적용한다.
+1. Supabase MCP `list_tables`(project_id: `peewjgbhqpkysitzqjum`)로 현재 스키마를 먼저 확인한다 (이미 `analyses`가 있으면 컬럼/제약을 아래 정의와 대조해 부족분만 반영).
+2. 아래 DDL을 담은 마이그레이션 파일을 `supabase/migrations/<timestamp>_create_analyses.sql`에 저장한다(리포지토리에 버전 관리되도록). 같은 SQL을 Supabase MCP `apply_migration`(project_id: `peewjgbhqpkysitzqjum`, name: `create_analyses`)으로 원격에 적용한다.
 3. **테이블 생성 DDL과 RLS 활성화·정책을 반드시 하나의 마이그레이션에 함께 포함**한다 — RLS가 적용되지 않은 테이블이 단 한 순간도 존재하지 않아야 한다.
 
 ### 컬럼 정의 (`analyses`)

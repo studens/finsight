@@ -1,8 +1,21 @@
 {
   "phases": [
-    { "dir": "0-db-schema", "status": "pending" },
-    { "dir": "1-core-services", "status": "pending" },
-    { "dir": "2-api-routes", "status": "pending" },
-    { "dir": "3-frontend", "status": "pending" }
+    {
+      "dir": "0-db-schema",
+      "status": "blocked",
+      "blocked_at": "2026-07-20T16:39:21+0900"
+    },
+    {
+      "dir": "1-core-services",
+      "status": "pending"
+    },
+    {
+      "dir": "2-api-routes",
+      "status": "pending"
+    },
+    {
+      "dir": "3-frontend",
+      "status": "pending"
+    }
   ]
 }
