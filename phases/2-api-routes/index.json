@@ -24,7 +24,7 @@
       "status": "completed",
       "started_at": "2026-07-20T17:26:29+0900",
       "summary": "service-role 전용 클라이언트와 소유권 검증·JSON 병합을 강제하는 Supabase 관리자 쓰기 서비스를 TDD로 구현",
-      "completed_at": "2026-07-20T17:28:21+0900"
+      "completed_at": "2026-07-20T17:28:57+0900"
     },
     {
       "step": 3,
