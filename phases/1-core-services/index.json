@@ -29,7 +29,10 @@
     {
       "step": 3,
       "name": "llm 프로바이더 추상화 + 컬럼 매핑 추론",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-07-20T17:02:10+0900",
+      "summary": "Claude Opus 4.8 단일 프로바이더와 마스킹된 샘플만 사용하는 컬럼 매핑 추론을 AI SDK 모킹 테스트로 구현했다.",
+      "completed_at": "2026-07-20T17:04:22+0900"
     },
     {
       "step": 4,

@@ -7,6 +7,8 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^4.0.16",
+    "ai": "^7.0.31",
     "csv-parse": "^6.1.0",
     "iconv-lite": "^0.7.0"
   },
