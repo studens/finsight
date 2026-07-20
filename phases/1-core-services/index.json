@@ -2,12 +2,43 @@
   "project": "finsight",
   "phase": "core-services",
   "steps": [
-    { "step": 0, "name": "공유 파이프라인 타입 정의 (브랜디드 MaskedRow 경계)", "status": "pending" },
-    { "step": 1, "name": "csv-parser 서비스 — 인코딩 감지 + 인메모리 파싱", "status": "pending" },
-    { "step": 2, "name": "pii-masking 서비스 — 카드/계좌 마스킹 + PII 컬럼 제외", "status": "pending" },
-    { "step": 3, "name": "llm 프로바이더 추상화 + 컬럼 매핑 추론", "status": "pending" },
-    { "step": 4, "name": "llm Free 요약 생성", "status": "pending" },
-    { "step": 5, "name": "llm Premium 리포트 — 전월대비 + 이상거래", "status": "pending" },
-    { "step": 6, "name": "llm Premium 리포트 — 절약제안 + 예산추천 + 리포트 디스패처", "status": "pending" }
-  ]
+    {
+      "step": 0,
+      "name": "공유 파이프라인 타입 정의 (브랜디드 MaskedRow 경계)",
+      "status": "completed",
+      "started_at": "2026-07-20T16:54:33+0900",
+      "summary": "CSV 파이프라인 공유 타입과 브랜디드 MaskedRow 경계를 타입 레벨 테스트로 정의했다."
+    },
+    {
+      "step": 1,
+      "name": "csv-parser 서비스 — 인코딩 감지 + 인메모리 파싱",
+      "status": "pending"
+    },
+    {
+      "step": 2,
+      "name": "pii-masking 서비스 — 카드/계좌 마스킹 + PII 컬럼 제외",
+      "status": "pending"
+    },
+    {
+      "step": 3,
+      "name": "llm 프로바이더 추상화 + 컬럼 매핑 추론",
+      "status": "pending"
+    },
+    {
+      "step": 4,
+      "name": "llm Free 요약 생성",
+      "status": "pending"
+    },
+    {
+      "step": 5,
+      "name": "llm Premium 리포트 — 전월대비 + 이상거래",
+      "status": "pending"
+    },
+    {
+      "step": 6,
+      "name": "llm Premium 리포트 — 절약제안 + 예산추천 + 리포트 디스패처",
+      "status": "pending"
+    }
+  ],
+  "created_at": "2026-07-20T16:54:33+0900"
 }
