@@ -2,13 +2,48 @@
   "project": "finsight",
   "phase": "frontend",
   "steps": [
-    { "step": 0, "name": "디자인 토큰 + 공용 UI 프리미티브 + 컴포넌트 테스트 셋업", "status": "pending" },
-    { "step": 1, "name": "ErrorModal — 에러 코드 은닉 통일 모달 + useApiError 훅", "status": "pending" },
-    { "step": 2, "name": "랜딩 페이지 (marketing) /", "status": "pending" },
-    { "step": 3, "name": "로그인 페이지 /login — Google OAuth 버튼", "status": "pending" },
-    { "step": 4, "name": "FreeSummaryCards — Free 요약 결과 프리젠테이션 컴포넌트", "status": "pending" },
-    { "step": 5, "name": "PremiumSection — 잠금 CTA 카드 + 구독자 지연조회", "status": "pending" },
-    { "step": 6, "name": "UploadFlow — 드롭존 → 컬럼 매핑 확인 → analyze (원본 File 유지)", "status": "pending" },
-    { "step": 7, "name": "대시보드 페이지 조립 + 업로드 이력 (/dashboard, /dashboard/[analysisId])", "status": "pending" }
-  ]
+    {
+      "step": 0,
+      "name": "디자인 토큰 + 공용 UI 프리미티브 + 컴포넌트 테스트 셋업",
+      "status": "completed",
+      "started_at": "2026-07-21T13:11:10+0900",
+      "summary": "다크 디자인 토큰과 공용 UI 프리미티브 4종, node/jsdom 분리 Vitest+RTL 환경을 구축했다."
+    },
+    {
+      "step": 1,
+      "name": "ErrorModal — 에러 코드 은닉 통일 모달 + useApiError 훅",
+      "status": "pending"
+    },
+    {
+      "step": 2,
+      "name": "랜딩 페이지 (marketing) /",
+      "status": "pending"
+    },
+    {
+      "step": 3,
+      "name": "로그인 페이지 /login — Google OAuth 버튼",
+      "status": "pending"
+    },
+    {
+      "step": 4,
+      "name": "FreeSummaryCards — Free 요약 결과 프리젠테이션 컴포넌트",
+      "status": "pending"
+    },
+    {
+      "step": 5,
+      "name": "PremiumSection — 잠금 CTA 카드 + 구독자 지연조회",
+      "status": "pending"
+    },
+    {
+      "step": 6,
+      "name": "UploadFlow — 드롭존 → 컬럼 매핑 확인 → analyze (원본 File 유지)",
+      "status": "pending"
+    },
+    {
+      "step": 7,
+      "name": "대시보드 페이지 조립 + 업로드 이력 (/dashboard, /dashboard/[analysisId])",
+      "status": "pending"
+    }
+  ],
+  "created_at": "2026-07-21T13:11:10+0900"
 }
