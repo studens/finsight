@@ -21,7 +21,10 @@
     {
       "step": 2,
       "name": "랜딩 페이지 (marketing) /",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-07-21T13:16:36+0900",
+      "summary": "정적 마케팅 랜딩에 히어로, 3단계 안내, Free/Premium 비교, 데이터 신뢰 메시지와 로그인 CTA를 구현했다.",
+      "completed_at": "2026-07-21T13:19:01+0900"
     },
     {
       "step": 3,
