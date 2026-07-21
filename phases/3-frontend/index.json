@@ -37,7 +37,10 @@
     {
       "step": 4,
       "name": "FreeSummaryCards — Free 요약 결과 프리젠테이션 컴포넌트",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-07-21T13:21:16+0900",
+      "summary": "FreeSummary를 원화 포맷과 내림차순 카테고리, 가맹점 Top 5 카드로 표시하는 props-only 컴포넌트와 RTL 테스트를 구현했다.",
+      "completed_at": "2026-07-21T13:22:54+0900"
     },
     {
       "step": 5,
