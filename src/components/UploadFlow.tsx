@@ -1,0 +1,211 @@
+"use client";
+
+import React, { useState } from "react";
+
+import { useApiError } from "../hooks/useApiError";
+import type { ColumnMapping, ConfirmedMapping, FreeSummary, RawRow } from "../types/pipeline";
+import { ErrorModal } from "./ErrorModal";
+import { FreeSummaryCards } from "./FreeSummaryCards";
+import { PremiumSection } from "./PremiumSection";
+import { Button } from "./ui/button";
+
+interface UploadFlowProps {
+  isSubscribed: boolean;
+}
+
+interface UploadSample {
+  headers: string[];
+  rows: RawRow[];
+  excludedColumns: string[];
+  maskedColumns: string[];
+}
+
+interface UploadResponse {
+  mapping: ColumnMapping;
+  sample: UploadSample;
+}
+
+interface AnalyzeResponse {
+  analysisId: string;
+  freeSummary: FreeSummary;
+}
+
+type Step = "idle" | "confirming" | "done";
+type MappingField = keyof ConfirmedMapping;
+
+const FIELD_LABELS: Record<MappingField, string> = {
+  date: "날짜 컬럼",
+  merchant: "가맹점 컬럼",
+  amount: "금액 컬럼",
+  category: "카테고리 컬럼",
+};
+
+export function UploadFlow({ isSubscribed }: UploadFlowProps) {
+  const [step, setStep] = useState<Step>("idle");
+  const [file, setFile] = useState<File | null>(null);
+  const [sample, setSample] = useState<UploadSample | null>(null);
+  const [mapping, setMapping] = useState<ColumnMapping | null>(null);
+  const [result, setResult] = useState<AnalyzeResponse | null>(null);
+  const [isWorking, setIsWorking] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const { error, isOpen, handleResponse, close } = useApiError();
+
+  async function upload(selectedFile: File) {
+    setFile(selectedFile);
+    setIsWorking(true);
+    const body = new FormData();
+    body.append("file", selectedFile);
+
+    try {
+      const response = await fetch("/api/upload", { method: "POST", body });
+      if (await handleResponse(response)) return;
+      const data = (await response.json()) as UploadResponse;
+      setMapping(data.mapping);
+      setSample(data.sample);
+      setStep("confirming");
+    } catch {
+      await handleResponse(new Response("", { status: 500 }));
+    } finally {
+      setIsWorking(false);
+    }
+  }
+
+  function reset() {
+    setStep("idle");
+    setFile(null);
+    setSample(null);
+    setMapping(null);
+    setResult(null);
+  }
+
+  function updateMapping(field: MappingField, value: string) {
+    setMapping((current) =>
+      current ? { ...current, [field]: value === "" ? null : value } : current,
+    );
+  }
+
+  async function analyze() {
+    if (!file || !mapping?.date || !mapping.merchant || !mapping.amount) return;
+    const confirmed: ConfirmedMapping = {
+      date: mapping.date,
+      merchant: mapping.merchant,
+      amount: mapping.amount,
+      category: mapping.category,
+    };
+    const body = new FormData();
+    body.append("file", file);
+    body.append("mapping", JSON.stringify(confirmed));
+    setIsWorking(true);
+
+    try {
+      const response = await fetch("/api/analyze", { method: "POST", body });
+      if (await handleResponse(response)) return;
+      const data = (await response.json()) as AnalyzeResponse;
+      setResult(data);
+      setStep("done");
+    } catch {
+      await handleResponse(new Response("", { status: 500 }));
+    } finally {
+      setIsWorking(false);
+    }
+  }
+
+  return (
+    <div className="mx-auto max-w-5xl text-left">
+      {step === "idle" ? (
+        <section
+          className={`rounded-[24px] bg-[#16181c] p-8 ${isDragging ? "outline outline-2 outline-[#0052ff]" : ""}`}
+          data-testid="upload-card"
+          onDragEnter={(event) => {
+            event.preventDefault();
+            setIsDragging(true);
+          }}
+          onDragLeave={() => setIsDragging(false)}
+          onDragOver={(event) => event.preventDefault()}
+          onDrop={(event) => {
+            event.preventDefault();
+            setIsDragging(false);
+            const droppedFile = event.dataTransfer.files[0];
+            if (droppedFile) void upload(droppedFile);
+          }}
+        >
+          <h2 className="text-2xl font-semibold text-white">거래내역 CSV 업로드</h2>
+          <p className="mt-3 text-sm leading-relaxed text-[#a8acb3]">
+            CSV 파일을 이곳에 끌어다 놓거나 파일을 선택하세요. 원본 파일은 저장하지 않아요.
+          </p>
+          <label className="mt-8 inline-flex h-14 cursor-pointer items-center rounded-full bg-[#0052ff] px-8 font-semibold text-white hover:bg-[#003ecc]">
+            파일 선택
+            <input
+              accept=".csv,text/csv"
+              aria-label="CSV 파일 선택"
+              className="sr-only"
+              disabled={isWorking}
+              onChange={(event) => {
+                const selectedFile = event.target.files?.[0];
+                if (selectedFile) void upload(selectedFile);
+              }}
+              type="file"
+            />
+          </label>
+          {isWorking ? <p className="mt-4 animate-fade-in text-sm text-[#a8acb3]">파일을 확인하고 있어요...</p> : null}
+        </section>
+      ) : null}
+
+      {step === "confirming" && sample && mapping ? (
+        <section className="rounded-[24px] bg-[#16181c] p-8" data-testid="mapping-card">
+          <h2 className="text-2xl font-semibold text-white">컬럼 매핑 확인</h2>
+          <p className="mt-3 text-sm text-[#a8acb3]">분석에 사용할 컬럼이 맞는지 확인해 주세요.</p>
+          {mapping.confidence < 0.7 ? (
+            <p className="mt-4 rounded-xl bg-[#0a0b0d] p-4 text-sm text-[#5b8bff]">
+              자동 매핑의 확신도가 낮아요. 매핑 결과를 한 번 더 확인해 주세요.
+            </p>
+          ) : null}
+
+          <div className="mt-8 grid gap-4 sm:grid-cols-2">
+            {(Object.keys(FIELD_LABELS) as MappingField[]).map((field) => (
+              <label className="text-sm text-[#a8acb3]" key={field}>
+                {FIELD_LABELS[field]}
+                <select
+                  aria-label={FIELD_LABELS[field]}
+                  className="mt-2 w-full rounded-xl border border-[#2a2d33] bg-[#16181c] px-4 py-3 text-white"
+                  onChange={(event) => updateMapping(field, event.target.value)}
+                  value={mapping[field] ?? ""}
+                >
+                  {field === "category" ? <option value="">선택하지 않음</option> : <option value="">선택하세요</option>}
+                  {sample.headers.map((header) => <option key={header} value={header}>{header}</option>)}
+                </select>
+              </label>
+            ))}
+          </div>
+
+          <div className="mt-8 overflow-x-auto rounded-xl bg-[#0a0b0d]">
+            <table className="w-full text-left text-sm">
+              <thead><tr>{sample.headers.map((header) => <th className="whitespace-nowrap p-4 font-medium text-[#a8acb3]" key={header}>{header}</th>)}</tr></thead>
+              <tbody>{sample.rows.map((row, index) => <tr key={index}>{sample.headers.map((header) => <td className="whitespace-nowrap border-t border-[#2a2d33] p-4 text-white" key={header}>{row[header]}</td>)}</tr>)}</tbody>
+            </table>
+          </div>
+
+          <div className="mt-6 space-y-2 text-sm text-[#a8acb3]">
+            {sample.excludedColumns.length ? <p>{sample.excludedColumns.join("·")}는 전송되지 않았어요</p> : null}
+            {sample.maskedColumns.length ? <p>{sample.maskedColumns.join("·")}는 뒤 4자리만 남겼어요</p> : null}
+          </div>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Button disabled={isWorking || !mapping.date || !mapping.merchant || !mapping.amount} onClick={() => void analyze()} type="button">
+              {isWorking ? "분석 중..." : "분석 시작"}
+            </Button>
+            <Button disabled={isWorking} onClick={reset} type="button" variant="secondary">다시 올리기</Button>
+          </div>
+        </section>
+      ) : null}
+
+      {step === "done" && result ? (
+        <div className="slide-up space-y-8">
+          <FreeSummaryCards summary={result.freeSummary} />
+          <PremiumSection analysisId={result.analysisId} isSubscribed={isSubscribed} />
+        </div>
+      ) : null}
+
+      <ErrorModal isOpen={isOpen} message={error?.message} onClose={close} />
+    </div>
+  );
+}
