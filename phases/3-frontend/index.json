@@ -16,7 +16,7 @@
       "status": "completed",
       "started_at": "2026-07-21T13:14:18+0900",
       "summary": "API 에러 코드를 부드러운 한국어 문구로 은닉하는 공용 ErrorModal과 useApiError 훅을 구현했다.",
-      "completed_at": "2026-07-21T13:16:07+0900"
+      "completed_at": "2026-07-21T13:16:36+0900"
     },
     {
       "step": 2,
