@@ -48,8 +48,8 @@ export function AiInsightDemo() {
     <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 max-sm:grid-cols-1">
       <div className="rounded-[24px] bg-[#16181c] p-6">
         <p className="font-mono text-xs text-[#6e7480]">raw_statement.csv</p>
-        <div className="mt-4 space-y-3">
-          <div className="grid grid-cols-[4rem_1fr_4.5rem_6.5rem] gap-2 text-[11px] font-medium text-[#6e7480] max-sm:grid-cols-[1fr_4.5rem_6.5rem]">
+        <div className="mt-4">
+          <div className="grid grid-cols-[4rem_1fr_4.5rem_6.5rem] gap-2 px-2 text-[11px] font-medium text-[#6e7480] max-sm:grid-cols-[1fr_4.5rem_6.5rem]">
             <span className="max-sm:hidden">날짜</span>
             <span>가맹점</span>
             <span>금액</span>
@@ -57,9 +57,9 @@ export function AiInsightDemo() {
           </div>
           {rawRows.map((row, index) => (
             <div
-              className={`grid grid-cols-[4rem_1fr_4.5rem_6.5rem] gap-2 font-mono text-[11px] text-[#a8acb3] max-sm:grid-cols-[1fr_4.5rem_6.5rem] ${
-                index === rawRows.length - 1 ? "opacity-40" : ""
-              }`}
+              className={`grid grid-cols-[4rem_1fr_4.5rem_6.5rem] gap-2 rounded-md px-2 py-1.5 font-mono text-[11px] text-[#a8acb3] max-sm:grid-cols-[1fr_4.5rem_6.5rem] ${
+                index % 2 === 0 ? "bg-[#0a0b0d]" : ""
+              } ${index === rawRows.length - 1 ? "opacity-40" : ""}`}
               key={row.merchant}
             >
               <span className="max-sm:hidden">{row.date}</span>
