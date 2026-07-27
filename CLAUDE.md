@@ -25,11 +25,12 @@
 - 커밋 메시지는 conventional commits 형식을 따를 것 (feat:, fix:, docs:, refactor:)
 
 ## 명령어
-npm run dev      # 개발 서버
-npm run build    # 프로덕션 빌드
-npm run lint     # ESLint
-npm run test     # 테스트 (Vitest)
-npm run test:e2e # E2E 테스트 (Playwright)
+npm run dev       # 개발 서버
+npm run build     # 프로덕션 빌드 (next build)
+npm run typecheck # 타입체크 (tsc --noEmit)
+npm run lint      # ESLint
+npm run test      # 테스트 (Vitest)
+npm run test:e2e  # E2E 테스트 (Playwright, 아직 미설정)
 
 ## 하네스: finsight MVP 계획·실행 오케스트레이션
 
