@@ -1,11 +1,9 @@
-import { generateText } from "ai"
-
 import type {
   AnalysisRecord,
   MonthOverMonthReport,
   SpendingChange,
 } from "../../../types/pipeline"
-import { getAnalysisModel } from "../provider"
+import { generateAnalysisText } from "../provider"
 
 function calculateChange(current: number, previous: number): SpendingChange {
   const change = current - previous
@@ -50,8 +48,7 @@ export async function generateMomComparison(input: {
     ),
   }))
   const comparison = { total, categories }
-  const { text } = await generateText({
-    model: getAnalysisModel(),
+  const { text } = await generateAnalysisText({
     prompt: [
       "다음 전월 대비 지출 수치를 간결한 한국어 한두 문장으로 해석하세요.",
       "수치는 이미 계산되었으므로 재계산하지 말고 중요한 변화만 설명하세요.",

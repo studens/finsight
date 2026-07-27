@@ -1,7 +1,5 @@
-import { generateText } from "ai"
-
 import type { ColumnMapping, MaskedRow } from "../../types/pipeline"
-import { getAnalysisModel } from "./provider"
+import { generateAnalysisText } from "./provider"
 
 const MAX_SAMPLE_ROWS = 5
 
@@ -53,10 +51,7 @@ export async function inferColumnMapping(input: {
     `샘플 행: ${JSON.stringify(sampleRows)}`,
   ].join("\n")
 
-  const { text } = await generateText({
-    model: getAnalysisModel(),
-    prompt,
-  })
+  const { text } = await generateAnalysisText({ prompt })
 
   return parseColumnMapping(text)
 }

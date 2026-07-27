@@ -2,11 +2,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import type { AnalysisRecord, MaskedRow } from "../../../types/pipeline"
 
-const generateText = vi.fn()
-const getAnalysisModel = vi.fn(() => ({ modelId: "test-model" }))
+const generateAnalysisText = vi.fn()
 
-vi.mock("ai", () => ({ generateText }))
-vi.mock("../provider", () => ({ getAnalysisModel }))
+vi.mock("../provider", () => ({ generateAnalysisText }))
 
 function analysis(
   id: string,
@@ -23,12 +21,11 @@ function analysis(
 
 describe("generateMomComparison", () => {
   beforeEach(() => {
-    generateText.mockReset()
-    getAnalysisModel.mockClear()
+    generateAnalysisText.mockReset()
   })
 
   it("calculates total and category changes in code and adds Claude commentary", async () => {
-    generateText.mockResolvedValue({ text: "식비 증가가 전체 지출 상승을 이끌었습니다." })
+    generateAnalysisText.mockResolvedValue({ text: "식비 증가가 전체 지출 상승을 이끌었습니다." })
     const { generateMomComparison } = await import("./mom-comparison")
 
     await expect(
@@ -47,8 +44,8 @@ describe("generateMomComparison", () => {
       ],
       commentary: "식비 증가가 전체 지출 상승을 이끌었습니다.",
     })
-    expect(generateText).toHaveBeenCalledOnce()
-    expect(generateText.mock.calls[0][0].prompt).toContain('"change":50000')
+    expect(generateAnalysisText).toHaveBeenCalledOnce()
+    expect(generateAnalysisText.mock.calls[0][0].prompt).toContain('"change":50000')
   })
 
   it("returns a normal no-previous result without calling Claude", async () => {
@@ -63,7 +60,6 @@ describe("generateMomComparison", () => {
       categories: [],
       commentary: null,
     })
-    expect(generateText).not.toHaveBeenCalled()
-    expect(getAnalysisModel).not.toHaveBeenCalled()
+    expect(generateAnalysisText).not.toHaveBeenCalled()
   })
 })

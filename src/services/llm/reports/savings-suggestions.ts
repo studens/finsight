@@ -1,7 +1,5 @@
-import { generateText } from "ai"
-
 import type { AnalysisRecord, SavingsReport } from "../../../types/pipeline"
-import { getAnalysisModel } from "../provider"
+import { generateAnalysisText } from "../provider"
 
 type SavingsPayload = Omit<SavingsReport, "type">
 
@@ -47,8 +45,7 @@ export async function generateSavingsSuggestions(input: {
     maskedTransactions: current.maskedTransactions,
     freeSummary: current.freeSummary,
   }
-  const { text } = await generateText({
-    model: getAnalysisModel(),
+  const { text } = await generateAnalysisText({
     prompt: [
       "다음 마스킹된 거래와 지출 요약을 바탕으로 실행 가능한 절약 제안을 만드세요.",
       "summary와 suggestions 배열을 가진 JSON만 반환하세요.",

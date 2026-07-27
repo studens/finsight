@@ -2,20 +2,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import type { AnalysisRecord, MaskedRow } from "../../../types/pipeline"
 
-const generateText = vi.fn()
-const getAnalysisModel = vi.fn(() => ({ modelId: "test-model" }))
+const generateAnalysisText = vi.fn()
 
-vi.mock("ai", () => ({ generateText }))
-vi.mock("../provider", () => ({ getAnalysisModel }))
+vi.mock("../provider", () => ({ generateAnalysisText }))
 
 describe("generateAnomalyDetection", () => {
   beforeEach(() => {
-    generateText.mockReset()
-    getAnalysisModel.mockClear()
+    generateAnalysisText.mockReset()
   })
 
   it("returns anomalies generated from only the current masked analysis", async () => {
-    generateText.mockResolvedValue({
+    generateAnalysisText.mockResolvedValue({
       text: JSON.stringify({
         summary: "평소보다 큰 결제가 발견되었습니다.",
         anomalies: [{ transactionIndex: 1, reason: "고액 결제", severity: "high" }],
@@ -42,8 +39,8 @@ describe("generateAnomalyDetection", () => {
       summary: "평소보다 큰 결제가 발견되었습니다.",
       anomalies: [{ transactionIndex: 1, reason: "고액 결제", severity: "high" }],
     })
-    expect(generateText).toHaveBeenCalledOnce()
-    expect(generateText.mock.calls[0][0].prompt).toContain("****5678")
-    expect(generateText.mock.calls[0][0].prompt).not.toContain("analysis-1")
+    expect(generateAnalysisText).toHaveBeenCalledOnce()
+    expect(generateAnalysisText.mock.calls[0][0].prompt).toContain("****5678")
+    expect(generateAnalysisText.mock.calls[0][0].prompt).not.toContain("analysis-1")
   })
 })

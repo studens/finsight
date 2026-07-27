@@ -2,11 +2,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import type { ConfirmedMapping, MaskedRow } from "../../types/pipeline"
 
-const generateText = vi.fn()
-const getAnalysisModel = vi.fn(() => ({ modelId: "test-model" }))
+const generateAnalysisText = vi.fn()
 
-vi.mock("ai", () => ({ generateText }))
-vi.mock("./provider", () => ({ getAnalysisModel }))
+vi.mock("./provider", () => ({ generateAnalysisText }))
 
 const mapping: ConfirmedMapping = {
   date: "date",
@@ -21,8 +19,7 @@ function maskedRows(rows: Record<string, string>[]): MaskedRow[] {
 
 describe("generateFreeSummary", () => {
   beforeEach(() => {
-    generateText.mockReset()
-    getAnalysisModel.mockClear()
+    generateAnalysisText.mockReset()
   })
 
   it("calculates every Free summary field without calling Claude", async () => {
@@ -53,8 +50,7 @@ describe("generateFreeSummary", () => {
         { merchant: "택시", amount: 9000 },
       ],
     })
-    expect(generateText).not.toHaveBeenCalled()
-    expect(getAnalysisModel).not.toHaveBeenCalled()
+    expect(generateAnalysisText).not.toHaveBeenCalled()
   })
 
   it("returns only existing merchants in descending amount order", async () => {
@@ -90,7 +86,7 @@ describe("generateFreeSummary", () => {
   })
 
   it("uses mocked Claude classification only when category is unmapped", async () => {
-    generateText.mockResolvedValue({ text: JSON.stringify(["식비", "교통", "식비"]) })
+    generateAnalysisText.mockResolvedValue({ text: JSON.stringify(["식비", "교통", "식비"]) })
     const { generateFreeSummary } = await import("./free-summary")
 
     await expect(
@@ -112,9 +108,8 @@ describe("generateFreeSummary", () => {
         { merchant: "카페", amount: 5000 },
       ],
     })
-    expect(generateText).toHaveBeenCalledOnce()
-    expect(getAnalysisModel).toHaveBeenCalledOnce()
-    expect(generateText.mock.calls[0][0].prompt).toContain("카페")
-    expect(generateText.mock.calls[0][0].prompt).toContain("JSON 문자열 배열")
+    expect(generateAnalysisText).toHaveBeenCalledOnce()
+    expect(generateAnalysisText.mock.calls[0][0].prompt).toContain("카페")
+    expect(generateAnalysisText.mock.calls[0][0].prompt).toContain("JSON 문자열 배열")
   })
 })

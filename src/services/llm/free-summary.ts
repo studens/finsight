@@ -1,11 +1,9 @@
-import { generateText } from "ai"
-
 import type {
   ConfirmedMapping,
   FreeSummary,
   MaskedRow,
 } from "../../types/pipeline"
-import { getAnalysisModel } from "./provider"
+import { generateAnalysisText } from "./provider"
 
 function parseAmount(value: string): number {
   const normalized = value.replace(/[^0-9.-]/g, "")
@@ -43,10 +41,7 @@ async function classifyCategories(
     "설명이나 마크다운을 포함하지 마세요.",
     `거래: ${JSON.stringify(transactions)}`,
   ].join("\n")
-  const { text } = await generateText({
-    model: getAnalysisModel(),
-    prompt,
-  })
+  const { text } = await generateAnalysisText({ prompt })
 
   return parseCategories(text, rows.length)
 }

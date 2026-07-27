@@ -1,7 +1,5 @@
-import { generateText } from "ai"
-
 import type { AnalysisRecord, AnomalyReport } from "../../../types/pipeline"
-import { getAnalysisModel } from "../provider"
+import { generateAnalysisText } from "../provider"
 
 type AnomalyPayload = Omit<AnomalyReport, "type">
 
@@ -45,8 +43,7 @@ export async function generateAnomalyDetection(input: {
   current: AnalysisRecord
 }): Promise<AnomalyReport> {
   const { current } = input
-  const { text } = await generateText({
-    model: getAnalysisModel(),
+  const { text } = await generateAnalysisText({
     prompt: [
       "다음 마스킹된 거래에서 이상 거래나 중복 결제 후보를 찾으세요.",
       "summary와 anomalies 배열을 가진 JSON만 반환하세요.",

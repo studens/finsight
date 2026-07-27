@@ -1,7 +1,5 @@
-import { generateText } from "ai"
-
 import type { AnalysisRecord, BudgetReport } from "../../../types/pipeline"
-import { getAnalysisModel } from "../provider"
+import { generateAnalysisText } from "../provider"
 
 type BudgetPayload = Omit<BudgetReport, "type">
 
@@ -47,11 +45,10 @@ export async function generateBudgetRecommendation(input: {
   current: AnalysisRecord
 }): Promise<BudgetReport> {
   const { current } = input
-  const { text } = await generateText({
-    model: getAnalysisModel(),
+  const { text } = await generateAnalysisText({
     prompt: [
       "다음 현재 지출 요약을 바탕으로 카테고리별 월 예산을 추천하세요.",
-      "summary와 categories 배열을 가진 JSON만 반환하세요.",
+      "summary(문자열 한두 문장)와 categories 배열을 가진 JSON만 반환하세요.",
       "각 category는 category, currentSpending, recommendedBudget, reason을 포함하세요.",
       "금액은 모두 0 이상의 숫자로 반환하세요.",
       `지출 요약: ${JSON.stringify(current.freeSummary)}`,

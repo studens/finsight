@@ -2,20 +2,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import type { AnalysisRecord, MaskedRow } from "../../../types/pipeline"
 
-const generateText = vi.fn()
-const getAnalysisModel = vi.fn(() => ({ modelId: "test-model" }))
+const generateAnalysisText = vi.fn()
 
-vi.mock("ai", () => ({ generateText }))
-vi.mock("../provider", () => ({ getAnalysisModel }))
+vi.mock("../provider", () => ({ generateAnalysisText }))
 
 describe("generateSavingsSuggestions", () => {
   beforeEach(() => {
-    generateText.mockReset()
-    getAnalysisModel.mockClear()
+    generateAnalysisText.mockReset()
   })
 
   it("returns savings suggestions generated from only the current masked analysis", async () => {
-    generateText.mockResolvedValue({
+    generateAnalysisText.mockResolvedValue({
       text: JSON.stringify({
         summary: "반복 지출을 줄일 여지가 있습니다.",
         suggestions: [{
@@ -49,8 +46,8 @@ describe("generateSavingsSuggestions", () => {
         estimatedMonthlySavings: 20_000,
       }],
     })
-    expect(generateText).toHaveBeenCalledOnce()
-    expect(generateText.mock.calls[0][0].prompt).toContain("****1234")
-    expect(generateText.mock.calls[0][0].prompt).not.toContain("analysis-secret-id")
+    expect(generateAnalysisText).toHaveBeenCalledOnce()
+    expect(generateAnalysisText.mock.calls[0][0].prompt).toContain("****1234")
+    expect(generateAnalysisText.mock.calls[0][0].prompt).not.toContain("analysis-secret-id")
   })
 })
