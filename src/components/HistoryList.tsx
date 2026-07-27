@@ -36,7 +36,7 @@ export function HistoryList({ analyses }: HistoryListProps) {
           {analyses.map((analysis) => (
             <li key={analysis.id}>
               <Link
-                className="flex items-start gap-4 rounded-2xl bg-[#0a0b0d] p-5 transition-colors hover:bg-[#202329]"
+                className="group flex items-center gap-4 rounded-2xl bg-[#0a0b0d] p-5 transition-colors hover:bg-[#202329]"
                 href={`/dashboard/${analysis.id}`}
               >
                 <div className="min-w-0 flex-1">
@@ -50,11 +50,34 @@ export function HistoryList({ analyses }: HistoryListProps) {
                 <span className="font-mono text-sm tabular-nums text-[#a8acb3]">
                   {numberFormatter.format(analysis.transactionCount)}건
                 </span>
+                <ChevronIcon />
               </Link>
             </li>
           ))}
         </ul>
       )}
     </section>
+  );
+}
+
+function ChevronIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="shrink-0 text-[#6e7480] transition-transform group-hover:translate-x-0.5 group-hover:text-[#a8acb3]"
+      fill="none"
+      height="16"
+      viewBox="0 0 16 16"
+      width="16"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="m6 4 4 4-4 4"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.5"
+      />
+    </svg>
   );
 }
