@@ -23,7 +23,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="ko" className={`${inter.variable} ${jetBrainsMono.variable}`}>
+    <html lang="ko" className={`${inter.variable} ${jetBrainsMono.variable}`} suppressHydrationWarning>
       <body>{children}</body>
     </html>
   );
