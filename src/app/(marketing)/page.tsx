@@ -1,6 +1,7 @@
 import Link from "next/link";
 import React from "react";
 
+import { AiInsightDemo } from "../../components/AiInsightDemo";
 import { Badge, Card, IconBadge } from "../../components/ui";
 
 const primaryLinkClasses =
@@ -98,6 +99,23 @@ export default function MarketingPage() {
               </Card>
             ))}
           </div>
+        </section>
+
+        <section aria-labelledby="ai-insight-demo" className="space-y-8">
+          <div className="text-center">
+            <p className="text-sm font-medium text-[#a8acb3]">실제 동작</p>
+            <h2
+              className="mt-2 text-3xl font-normal tracking-tight text-white sm:text-4xl"
+              id="ai-insight-demo"
+            >
+              같은 명세서에서 AI가 무엇을 찾아내는지 보여줍니다
+            </h2>
+            <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-[#a8acb3]">
+              원본 CSV는 그대로, 마스킹된 거래 단위만 AI에게 전달해 구독 누수·이상
+              거래·카테고리 비중을 정리합니다.
+            </p>
+          </div>
+          <AiInsightDemo />
         </section>
 
         <section aria-labelledby="plans" className="space-y-8">
