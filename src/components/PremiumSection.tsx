@@ -219,10 +219,10 @@ export function PremiumSection({ analysisId, isSubscribed }: PremiumSectionProps
         return (
           <article
             key={report.type}
-            className="rounded-[24px] bg-[#16181c] p-8"
+            className="rounded-[24px] border-l-4 border-[#0052ff] bg-[#16181c] p-8 transition duration-200 hover:ring-1 hover:ring-[#33363c]"
             data-testid={`premium-card-${report.type}`}
           >
-            <Badge>PREMIUM</Badge>
+            <Badge className="bg-[rgba(0,82,255,0.14)] text-[#5b8bff]">PREMIUM</Badge>
             <h3 className="mt-5 text-xl font-semibold text-white">{report.title}</h3>
             <p className="mt-2 text-sm leading-relaxed text-[#a8acb3]">
               {report.description}
@@ -244,7 +244,8 @@ export function PremiumSection({ analysisId, isSubscribed }: PremiumSectionProps
                 {data ? <ReportData report={data} /> : null}
               </>
             ) : (
-              <Button className="mt-6" type="button">
+              <Button className="mt-6 gap-2" type="button">
+                <LockIcon />
                 Premium으로 보기
               </Button>
             )}
@@ -254,5 +255,34 @@ export function PremiumSection({ analysisId, isSubscribed }: PremiumSectionProps
 
       <ErrorModal isOpen={isOpen} message={error?.message} onClose={close} />
     </section>
+  );
+}
+
+function LockIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      fill="none"
+      height="16"
+      viewBox="0 0 16 16"
+      width="16"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <rect
+        height="7.5"
+        rx="1.5"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        width="10.5"
+        x="2.75"
+        y="7"
+      />
+      <path
+        d="M5 7V4.8a3 3 0 0 1 6 0V7"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="1.5"
+      />
+    </svg>
   );
 }

@@ -114,7 +114,9 @@ export function UploadFlow({ isSubscribed }: UploadFlowProps) {
     <div className="mx-auto max-w-5xl text-left">
       {step === "idle" ? (
         <section
-          className={`rounded-[24px] bg-[#16181c] p-8 ${isDragging ? "outline outline-2 outline-[#0052ff]" : ""}`}
+          className={`rounded-[24px] border-2 border-dashed bg-[#16181c] p-8 transition-colors sm:p-10 ${
+            isDragging ? "border-[#0052ff] bg-[rgba(0,82,255,0.06)]" : "border-[#2a2d33]"
+          }`}
           data-testid="upload-card"
           onDragEnter={(event) => {
             event.preventDefault();
@@ -129,10 +131,18 @@ export function UploadFlow({ isSubscribed }: UploadFlowProps) {
             if (droppedFile) void upload(droppedFile);
           }}
         >
-          <h2 className="text-2xl font-semibold text-white">거래내역 CSV 업로드</h2>
-          <p className="mt-3 text-sm leading-relaxed text-[#a8acb3]">
-            CSV 파일을 이곳에 끌어다 놓거나 파일을 선택하세요. 원본 파일은 저장하지 않아요.
-          </p>
+          <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-center">
+            <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[rgba(0,82,255,0.15)] text-[#0052ff]">
+              <UploadIcon />
+            </span>
+            <div>
+              <h2 className="text-2xl font-semibold text-white">거래내역 CSV 업로드</h2>
+              <p className="mt-3 text-sm leading-relaxed text-[#a8acb3]">
+                CSV 파일을 이곳에 끌어다 놓거나 파일을 선택하세요. 원본 파일은 저장하지 않아요.
+              </p>
+            </div>
+          </div>
+
           <label className="mt-8 inline-flex h-14 cursor-pointer items-center rounded-full bg-[#0052ff] px-8 font-semibold text-white hover:bg-[#003ecc]">
             파일 선택
             <input
@@ -147,7 +157,13 @@ export function UploadFlow({ isSubscribed }: UploadFlowProps) {
               type="file"
             />
           </label>
-          {isWorking ? <p className="mt-4 animate-fade-in text-sm text-[#a8acb3]">파일을 확인하고 있어요...</p> : null}
+          {isWorking ? (
+            <p className="mt-4 animate-fade-in text-sm text-[#a8acb3]">파일을 확인하고 있어요...</p>
+          ) : (
+            <p className="mt-6 text-[13px] leading-relaxed text-[#6e7480]">
+              CSV가 없나요? 카드사·은행 앱 → 이용내역 → 내보내기(CSV)에서 받을 수 있어요.
+            </p>
+          )}
         </section>
       ) : null}
 
@@ -156,9 +172,17 @@ export function UploadFlow({ isSubscribed }: UploadFlowProps) {
           <h2 className="text-2xl font-semibold text-white">컬럼 매핑 확인</h2>
           <p className="mt-3 text-sm text-[#a8acb3]">분석에 사용할 컬럼이 맞는지 확인해 주세요.</p>
           {mapping.confidence < 0.7 ? (
-            <p className="mt-4 rounded-xl bg-[#0a0b0d] p-4 text-sm text-[#5b8bff]">
-              자동 매핑의 확신도가 낮아요. 매핑 결과를 한 번 더 확인해 주세요.
-            </p>
+            <div className="mt-4 flex items-start gap-3 rounded-xl bg-[#0a0b0d] p-4">
+              <span
+                aria-hidden="true"
+                className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[rgba(91,139,255,0.15)] text-[10px] font-semibold text-[#5b8bff]"
+              >
+                !
+              </span>
+              <p className="text-sm text-[#5b8bff]">
+                자동 매핑의 확신도가 낮아요. 매핑 결과를 한 번 더 확인해 주세요.
+              </p>
+            </div>
           ) : null}
 
           <div className="mt-8 grid gap-4 sm:grid-cols-2">
@@ -185,9 +209,14 @@ export function UploadFlow({ isSubscribed }: UploadFlowProps) {
             </table>
           </div>
 
-          <div className="mt-6 space-y-2 text-sm text-[#a8acb3]">
-            {sample.excludedColumns.length ? <p>{sample.excludedColumns.join("·")}는 전송되지 않았어요</p> : null}
-            {sample.maskedColumns.length ? <p>{sample.maskedColumns.join("·")}는 뒤 4자리만 남겼어요</p> : null}
+          <div className="mt-6 flex items-start gap-3 rounded-xl bg-[#0a0b0d] p-4">
+            <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[rgba(5,177,105,0.15)] text-[#05b169]">
+              <ShieldIcon />
+            </span>
+            <div className="space-y-1.5 text-sm text-[#a8acb3]">
+              {sample.excludedColumns.length ? <p>{sample.excludedColumns.join("·")}는 전송되지 않았어요</p> : null}
+              {sample.maskedColumns.length ? <p>{sample.maskedColumns.join("·")}는 뒤 4자리만 남겼어요</p> : null}
+            </div>
           </div>
           <div className="mt-8 flex flex-wrap gap-3">
             <Button disabled={isWorking || !mapping.date || !mapping.merchant || !mapping.amount} onClick={() => void analyze()} type="button">
@@ -207,5 +236,60 @@ export function UploadFlow({ isSubscribed }: UploadFlowProps) {
 
       <ErrorModal isOpen={isOpen} message={error?.message} onClose={close} />
     </div>
+  );
+}
+
+function UploadIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      fill="none"
+      height="22"
+      viewBox="0 0 22 22"
+      width="22"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M11 14V3.5M11 3.5 7 7.5M11 3.5l4 4"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.5"
+      />
+      <path
+        d="M4 13.5v2a2.5 2.5 0 0 0 2.5 2.5h9a2.5 2.5 0 0 0 2.5-2.5v-2"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.5"
+      />
+    </svg>
+  );
+}
+
+function ShieldIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      fill="none"
+      height="14"
+      viewBox="0 0 20 20"
+      width="14"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M10 2.5 4 5v4.5c0 3.4 2.4 6.3 6 7.5 3.6-1.2 6-4.1 6-7.5V5l-6-2.5Z"
+        stroke="currentColor"
+        strokeLinejoin="round"
+        strokeWidth="1.5"
+      />
+      <path
+        d="m7.6 9.8 1.7 1.7 3.1-3.4"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.5"
+      />
+    </svg>
   );
 }
