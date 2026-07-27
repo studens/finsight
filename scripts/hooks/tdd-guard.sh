@@ -30,8 +30,9 @@ esac
 # .claude/, .codex/ 인프라(설정·훅·슬래시 커맨드)와 workflows/ 오케스트레이션 스크립트는 TDD 비대상 — 허용.
 # 이유: 워크플로우 스크립트는 런타임이 주입하는 전역(agent/pipeline/log)에 의존하는 오케스트레이션
 #       정의로, lib/services 비즈니스 로직이 아니며 유닛 테스트를 붙일 수 없다.
+# scripts/ 도구 스크립트(빌드/검증 유틸 등)도 같은 이유로 비대상 — 앱 비즈니스 로직이 아니다.
 case "$FILE_PATH" in
-  */.claude/*|*/.codex/*|*/workflows/*)
+  */.claude/*|*/.codex/*|*/workflows/*|*/scripts/*)
     exit 0
     ;;
 esac
