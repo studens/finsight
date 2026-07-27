@@ -7,8 +7,11 @@ import { Badge, Card, IconBadge } from "../../components/ui";
 const primaryLinkClasses =
   "inline-flex h-14 items-center justify-center rounded-full bg-[#0052ff] px-8 font-semibold text-white transition-colors hover:bg-[#003ecc]";
 
-const cardHoverClasses =
+const cardHoverClassesDark =
   "transition duration-200 hover:ring-1 hover:ring-[#33363c]";
+
+const cardHoverClassesLight =
+  "transition duration-200 hover:ring-1 hover:ring-[#c5c9d0]";
 
 const steps = [
   {
@@ -43,9 +46,10 @@ const premiumFeatures = [
 
 export default function MarketingPage() {
   return (
-    <main className="min-h-screen bg-[#0a0b0d] px-6 py-16 sm:py-24">
-      <div className="mx-auto max-w-5xl space-y-24">
-        <section className="pt-8 text-center sm:pt-12">
+    <main className="min-h-screen">
+      {/* 다크: 히어로 — 실제 지출 요약 미리보기를 보여주는 섹션이라 앱과 동일하게 다크 유지 */}
+      <section className="bg-[#0a0b0d] px-6 pb-16 pt-20 text-center sm:pb-24 sm:pt-28">
+        <div className="mx-auto max-w-5xl">
           <span className="inline-flex items-center gap-2 rounded-full bg-[#16181c] px-4 py-2 text-[13px] font-medium text-[#a8acb3]">
             <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-[#05b169]" />
             원본 CSV 미저장 · 뒤 4자리만
@@ -69,13 +73,16 @@ export default function MarketingPage() {
           </div>
 
           <HeroPreview />
-        </section>
+        </div>
+      </section>
 
-        <section aria-labelledby="how-it-works" className="space-y-8">
+      {/* 라이트: 순수 설명 섹션 */}
+      <section aria-labelledby="how-it-works" className="bg-white px-6 py-16 sm:py-24">
+        <div className="mx-auto max-w-5xl space-y-8">
           <div>
-            <p className="text-sm font-medium text-[#a8acb3]">작동 방식</p>
+            <p className="text-sm font-medium text-[#5b616e]">작동 방식</p>
             <h2
-              className="mt-2 text-3xl font-normal tracking-tight text-white sm:text-4xl"
+              className="mt-2 text-3xl font-normal tracking-tight text-[#0a0b0d] sm:text-4xl"
               id="how-it-works"
             >
               세 단계면 충분해요
@@ -84,24 +91,28 @@ export default function MarketingPage() {
           <div className="grid grid-cols-3 gap-6 max-sm:grid-cols-1">
             {steps.map((step, index) => (
               <Card
-                className={`animate-fade-in ${cardHoverClasses}`}
+                className={`animate-fade-in ${cardHoverClassesLight}`}
                 key={step.title}
                 style={{ animationDelay: `${index * 80}ms` }}
+                tone="light"
               >
                 <IconBadge tone="brand">
                   <step.icon />
                 </IconBadge>
-                <h3 className="mt-6 text-lg font-medium text-white">{step.title}</h3>
-                <p className="mt-3 text-sm leading-relaxed text-[#a8acb3]">
+                <h3 className="mt-6 text-lg font-medium text-[#0a0b0d]">{step.title}</h3>
+                <p className="mt-3 text-sm leading-relaxed text-[#5b616e]">
                   {step.description}
                 </p>
                 {index === steps.length - 1 ? <RawToSummaryVisual /> : null}
               </Card>
             ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        <section aria-labelledby="ai-insight-demo" className="space-y-8">
+      {/* 다크: 실제 제품 화면(AI 인사이트) 데모 — 진짜 앱과 같은 톤으로 신뢰를 준다 */}
+      <section aria-labelledby="ai-insight-demo" className="bg-[#0a0b0d] px-6 py-16 sm:py-24">
+        <div className="mx-auto max-w-5xl space-y-8">
           <div className="text-center">
             <p className="text-sm font-medium text-[#a8acb3]">실제 동작</p>
             <h2
@@ -116,47 +127,54 @@ export default function MarketingPage() {
             </p>
           </div>
           <AiInsightDemo />
-        </section>
+        </div>
+      </section>
 
-        <section aria-labelledby="plans" className="space-y-8">
+      {/* 라이트: 순수 설명 섹션 */}
+      <section aria-labelledby="plans" className="bg-white px-6 py-16 sm:py-24">
+        <div className="mx-auto max-w-5xl space-y-8">
           <div>
-            <p className="text-sm font-medium text-[#a8acb3]">기능 비교</p>
+            <p className="text-sm font-medium text-[#5b616e]">기능 비교</p>
             <h2
-              className="mt-2 text-3xl font-normal tracking-tight text-white sm:text-4xl"
+              className="mt-2 text-3xl font-normal tracking-tight text-[#0a0b0d] sm:text-4xl"
               id="plans"
             >
               필요한 만큼 깊게 확인하세요
             </h2>
           </div>
           <div className="grid grid-cols-2 gap-6 max-sm:grid-cols-1">
-            <Card className={`animate-fade-in ${cardHoverClasses}`}>
-              <h3 className="text-sm font-medium tracking-[0.08em] text-[#a8acb3]">
+            <Card className={`animate-fade-in ${cardHoverClassesLight}`} tone="light">
+              <h3 className="text-sm font-medium tracking-[0.08em] text-[#5b616e]">
                 FREE
               </h3>
-              <p className="mt-3 text-2xl font-normal text-white">무료·무제한</p>
-              <p className="mt-2 text-sm text-[#6e7480]">
+              <p className="mt-3 text-2xl font-normal text-[#0a0b0d]">무료·무제한</p>
+              <p className="mt-2 text-sm text-[#5b616e]">
                 올릴 때마다 바로 계산되는 기본 지출 요약
               </p>
               <FeatureList features={freeFeatures} tone="free" />
             </Card>
             <Card
-              className={`relative animate-fade-in border-l-4 border-[#0052ff] ${cardHoverClasses}`}
+              className={`relative animate-fade-in border-l-4 border-[#0052ff] ${cardHoverClassesLight}`}
               style={{ animationDelay: "80ms" }}
+              tone="light"
             >
               <Badge className="bg-[rgba(0,82,255,0.14)] text-[#5b8bff]">
                 PREMIUM
               </Badge>
-              <p className="mt-3 text-2xl font-normal text-white">구독</p>
-              <p className="mt-2 text-sm text-[#6e7480]">
+              <p className="mt-3 text-2xl font-normal text-[#0a0b0d]">구독</p>
+              <p className="mt-2 text-sm text-[#5b616e]">
                 이번 달, 카테고리별로 얼마나 늘었을까요?
               </p>
               <FeatureList features={premiumFeatures} tone="premium" />
             </Card>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <section aria-labelledby="data-trust">
-          <Card className={`animate-fade-in ${cardHoverClasses}`}>
+      {/* 다크: 신뢰 문구 — 로그인 결심 전 마지막 안심 포인트, 앱과 같은 다크 유지 */}
+      <section aria-labelledby="data-trust" className="bg-[#0a0b0d] px-6 py-16 sm:py-24">
+        <div className="mx-auto max-w-5xl">
+          <Card className={`animate-fade-in ${cardHoverClassesDark}`}>
             <div className="flex items-start gap-4">
               <IconBadge className="h-11 w-11" tone="hygiene">
                 <ShieldIcon />
@@ -173,20 +191,23 @@ export default function MarketingPage() {
               </div>
             </div>
           </Card>
-        </section>
+        </div>
+      </section>
 
-        <section className="pb-8 text-left">
-          <h2 className="text-3xl font-normal tracking-tight text-white sm:text-4xl">
+      {/* 라이트: 마지막 CTA */}
+      <section className="bg-white px-6 py-16 text-left sm:py-24">
+        <div className="mx-auto max-w-5xl">
+          <h2 className="text-3xl font-normal tracking-tight text-[#0a0b0d] sm:text-4xl">
             내 지출을 더 선명하게 보세요.
           </h2>
-          <p className="mt-4 text-sm leading-relaxed text-[#a8acb3]">
+          <p className="mt-4 text-sm leading-relaxed text-[#5b616e]">
             CSV를 준비했다면 바로 시작할 수 있어요.
           </p>
           <Link className={`${primaryLinkClasses} mt-8`} href="/login">
             무료로 시작하기
           </Link>
-        </section>
-      </div>
+        </div>
+      </section>
     </main>
   );
 }
@@ -266,7 +287,7 @@ function FeatureList({
   return (
     <ul className="mt-8 space-y-4">
       {features.map((feature) => (
-        <li className="flex items-center gap-3 text-sm text-white" key={feature}>
+        <li className="flex items-center gap-3 text-sm text-[#0a0b0d]" key={feature}>
           <span
             aria-hidden="true"
             className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${featureToneClasses[tone]}`}
@@ -304,8 +325,8 @@ function CheckIcon() {
 function RawToSummaryVisual() {
   return (
     <div className="mt-6 flex items-center gap-2" aria-hidden="true">
-      <div className="min-w-0 flex-1 rounded-xl bg-[#0a0b0d] p-3">
-        <p className="truncate font-mono text-[11px] leading-relaxed text-[#6e7480]">
+      <div className="min-w-0 flex-1 rounded-xl bg-[#f7f7f7] p-3">
+        <p className="truncate font-mono text-[11px] leading-relaxed text-[#5b616e]">
           07-02,스타벅스,-4,500
           <br />
           07-03,넷플릭스,-13,500
@@ -313,10 +334,10 @@ function RawToSummaryVisual() {
           07-05,GS25,-8,200
         </p>
       </div>
-      <ArrowRightIcon className="shrink-0 text-[#33363c]" />
-      <div className="flex-1 rounded-xl bg-[#0a0b0d] p-3">
-        <p className="text-[11px] text-[#a8acb3]">식비 합계</p>
-        <p className="font-mono text-base font-medium tabular-nums text-white">
+      <ArrowRightIcon className="shrink-0 text-[#8a8f99]" />
+      <div className="flex-1 rounded-xl bg-[#f7f7f7] p-3">
+        <p className="text-[11px] text-[#5b616e]">식비 합계</p>
+        <p className="font-mono text-base font-medium tabular-nums text-[#0a0b0d]">
           612,400원
         </p>
       </div>
