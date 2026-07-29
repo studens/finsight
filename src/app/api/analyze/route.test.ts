@@ -7,30 +7,47 @@ import type {
   MaskedRow,
   ParsedCsv,
 } from "../../../types/pipeline"
+import type { PdfColumnSchema } from "../../../types/pdf"
 
 const {
+  determinePdfColumnSchema,
+  generateAnalysisText,
   generateFreeSummary,
   generateReport,
   getSessionUser,
   insertAnalysis,
   maskPii,
   parseCsv,
+  parsePdfStatementWithSchema,
 } = vi.hoisted(() => ({
+  determinePdfColumnSchema: vi.fn(),
+  generateAnalysisText: vi.fn(),
   generateFreeSummary: vi.fn(),
   generateReport: vi.fn(),
   getSessionUser: vi.fn(),
   insertAnalysis: vi.fn(),
   maskPii: vi.fn(),
   parseCsv: vi.fn(),
+  parsePdfStatementWithSchema: vi.fn(),
 }))
 
 vi.mock("../../../lib/supabase/server", () => ({ getSessionUser }))
 vi.mock("../../../services/csv-parser", () => ({ parseCsv }))
 vi.mock("../../../services/pii-masking", () => ({ maskPii }))
 vi.mock("../../../services/llm/free-summary", () => ({ generateFreeSummary }))
+vi.mock("../../../services/llm/provider", () => ({ generateAnalysisText }))
 vi.mock("../../../services/llm/reports", () => ({ generateReport }))
 vi.mock("../../../services/supabase-admin", () => ({ insertAnalysis }))
+vi.mock("../../../services/pdf-parser", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../../services/pdf-parser")>()),
+  determinePdfColumnSchema,
+  parsePdfStatementWithSchema,
+}))
 
+import {
+  PdfPasswordRequiredError,
+  UnsupportedPdfFormatError,
+} from "../../../services/pdf-parser"
 import { POST } from "./route"
 
 const mapping: ConfirmedMapping = {
@@ -84,6 +101,9 @@ function analyzeRequest(input: {
   file?: File
   mapping?: unknown
   mappingValue?: FormDataEntryValue
+  password?: FormDataEntryValue
+  pdfColumnSchema?: unknown
+  pdfColumnSchemaValue?: FormDataEntryValue
 } = {}): Request {
   const formData = new FormData()
   if (input.file) formData.set("file", input.file)
@@ -91,6 +111,12 @@ function analyzeRequest(input: {
     formData.set("mapping", input.mappingValue)
   } else if (input.mapping !== undefined) {
     formData.set("mapping", JSON.stringify(input.mapping))
+  }
+  if (input.password !== undefined) formData.set("password", input.password)
+  if (input.pdfColumnSchemaValue !== undefined) {
+    formData.set("pdfColumnSchema", input.pdfColumnSchemaValue)
+  } else if (input.pdfColumnSchema !== undefined) {
+    formData.set("pdfColumnSchema", JSON.stringify(input.pdfColumnSchema))
   }
 
   return new Request("https://finsight.test/api/analyze", {
@@ -106,6 +132,47 @@ const csvFile = () =>
     { type: "text/csv" },
   )
 
+const pdfFile = (name = "statement.pdf", type = "application/pdf") =>
+  new File(["%PDF-1.7\nmock"], name, { type })
+
+const pdfMapping: ConfirmedMapping = {
+  date: "이용일",
+  merchant: "가맹점",
+  amount: "청구금액",
+  category: "구분",
+}
+
+const pdfSchema: PdfColumnSchema = {
+  version: 1,
+  issuer: "테스트카드",
+  columns: [
+    { rightEdge: 407, role: "billedAmount", headerLabel: "청구금액" },
+  ],
+  billedAmountRightEdge: 407,
+  rightEdgeTolerance: 1.5,
+  confidence: 0.99,
+}
+
+const pdfParsed: ParsedCsv = {
+  headers: ["이용일", "가맹점", "청구금액", "구분"],
+  rows: [
+    {
+      이용일: "2026-07-01",
+      가맹점: "아파트관리비",
+      청구금액: "246090",
+      구분: "일시불",
+    },
+  ],
+  rowCount: 1,
+}
+
+const pdfMasked: MaskedDataset = {
+  headers: pdfParsed.headers,
+  rows: pdfParsed.rows as MaskedRow[],
+  excludedColumns: [],
+  maskedColumns: [],
+}
+
 describe("POST /api/analyze", () => {
   beforeEach(() => {
     getSessionUser.mockReset().mockResolvedValue({ id: "session-user" })
@@ -114,6 +181,9 @@ describe("POST /api/analyze", () => {
     generateFreeSummary.mockReset().mockResolvedValue(freeSummary)
     insertAnalysis.mockReset().mockResolvedValue({ id: "analysis-1" })
     generateReport.mockReset()
+    generateAnalysisText.mockReset()
+    determinePdfColumnSchema.mockReset()
+    parsePdfStatementWithSchema.mockReset().mockResolvedValue(pdfParsed)
   })
 
   it("generates and stores only a Free summary from allowlisted masked columns", async () => {
@@ -166,6 +236,8 @@ describe("POST /api/analyze", () => {
     await expect(response.json()).resolves.toEqual({ code: "UNAUTHORIZED" })
     expect(formData).not.toHaveBeenCalled()
     expect(parseCsv).not.toHaveBeenCalled()
+    expect(parsePdfStatementWithSchema).not.toHaveBeenCalled()
+    expect(determinePdfColumnSchema).not.toHaveBeenCalled()
     expect(maskPii).not.toHaveBeenCalled()
     expect(generateFreeSummary).not.toHaveBeenCalled()
     expect(insertAnalysis).not.toHaveBeenCalled()
@@ -186,8 +258,227 @@ describe("POST /api/analyze", () => {
     expect(response.status).toBe(400)
     await expect(response.json()).resolves.toEqual({ code: "BAD_REQUEST" })
     expect(parseCsv).not.toHaveBeenCalled()
+    expect(parsePdfStatementWithSchema).not.toHaveBeenCalled()
+    expect(determinePdfColumnSchema).not.toHaveBeenCalled()
     expect(maskPii).not.toHaveBeenCalled()
     expect(generateFreeSummary).not.toHaveBeenCalled()
     expect(insertAnalysis).not.toHaveBeenCalled()
+  })
+
+  it("applies the returned PDF schema without performing LLM column redetermination", async () => {
+    maskPii.mockReturnValue(pdfMasked)
+    const response = await POST(analyzeRequest({
+      file: pdfFile("statement.csv", "text/csv"),
+      mapping: pdfMapping,
+      pdfColumnSchema: pdfSchema,
+      password: "s3cret-pw-1234",
+    }))
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toEqual({
+      analysisId: "analysis-1",
+      freeSummary,
+    })
+    expect(parsePdfStatementWithSchema).toHaveBeenCalledWith({
+      data: expect.any(Buffer),
+      password: "s3cret-pw-1234",
+      schema: pdfSchema,
+    })
+    expect(determinePdfColumnSchema).toHaveBeenCalledTimes(0)
+    expect(generateAnalysisText).toHaveBeenCalledTimes(0)
+    expect(parseCsv).not.toHaveBeenCalled()
+    expect(maskPii).toHaveBeenCalledWith(pdfParsed)
+
+    const projectedRows = generateFreeSummary.mock.calls[0][0].rows
+    expect(projectedRows).toEqual(pdfParsed.rows)
+    expect(insertAnalysis).toHaveBeenCalledWith({
+      userId: "session-user",
+      maskedTransactions: projectedRows,
+      freeSummary,
+    })
+    expect(JSON.stringify(insertAnalysis.mock.calls[0][0])).not.toContain("s3cret-pw-1234")
+    expect(JSON.stringify(insertAnalysis.mock.calls[0][0])).not.toContain("pdfColumnSchema")
+    expect(generateFreeSummary.mock.invocationCallOrder[0]).toBeLessThan(
+      insertAnalysis.mock.invocationCallOrder[0],
+    )
+  })
+
+  it.each([
+    ["missing", undefined],
+    ["empty", ""],
+  ])("passes %s PDF password as undefined", async (_case, password) => {
+    maskPii.mockReturnValue(pdfMasked)
+    await POST(analyzeRequest({
+      file: pdfFile(),
+      mapping: pdfMapping,
+      pdfColumnSchema: pdfSchema,
+      password,
+    }))
+
+    expect(parsePdfStatementWithSchema).toHaveBeenCalledWith({
+      data: expect.any(Buffer),
+      password: undefined,
+      schema: pdfSchema,
+    })
+  })
+
+  it.each([
+    ["missing", {}],
+    ["empty", { pdfColumnSchemaValue: "" }],
+    ["invalid JSON", { pdfColumnSchemaValue: "{" }],
+    ["array", { pdfColumnSchemaValue: "[]" }],
+    ["null", { pdfColumnSchemaValue: "null" }],
+    ["non-string", { pdfColumnSchemaValue: new File(["{}"], "schema.json") }],
+  ])("rejects a %s PDF schema before any processing", async (_case, schemaInput) => {
+    const response = await POST(analyzeRequest({
+      file: pdfFile(),
+      mapping: pdfMapping,
+      ...schemaInput,
+    }))
+    const body = await response.json()
+
+    expect(response.status).toBe(400)
+    expect(body).toEqual({ code: "BAD_REQUEST", reason: "pdf_schema_missing" })
+    expect(Object.keys(body).sort()).toEqual(["code", "reason"])
+    expect(parsePdfStatementWithSchema).not.toHaveBeenCalled()
+    expect(determinePdfColumnSchema).not.toHaveBeenCalled()
+    expect(parseCsv).not.toHaveBeenCalled()
+    expect(maskPii).not.toHaveBeenCalled()
+    expect(generateFreeSummary).not.toHaveBeenCalled()
+    expect(insertAnalysis).not.toHaveBeenCalled()
+  })
+
+  it("rejects a claimed PDF without magic bytes using the shared file classifier", async () => {
+    const response = await POST(analyzeRequest({
+      file: new File(["not-pdf"], "statement.pdf", { type: "application/pdf" }),
+      mapping: pdfMapping,
+      pdfColumnSchema: pdfSchema,
+    }))
+    const body = await response.json()
+
+    expect(response.status).toBe(422)
+    expect(body).toEqual({ code: "UNSUPPORTED_PDF_FORMAT" })
+    expect(Object.keys(body)).toEqual(["code"])
+    expect(parseCsv).not.toHaveBeenCalled()
+    expect(parsePdfStatementWithSchema).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ["missing", undefined, "missing"],
+    ["incorrect", "s3cret-pw-1234", "incorrect"],
+  ])("maps a %s PDF password error to a JSON 409", async (_case, password, reason) => {
+    const error = new PdfPasswordRequiredError(reason as "missing" | "incorrect")
+    if (password) error.message = `bad password: ${password}`
+    parsePdfStatementWithSchema.mockRejectedValue(error)
+
+    const response = await POST(analyzeRequest({
+      file: pdfFile(),
+      mapping: pdfMapping,
+      pdfColumnSchema: pdfSchema,
+      password,
+    }))
+    const clonedBody = await response.clone().json()
+
+    expect(response.status).toBe(409)
+    expect(response.headers.get("content-type")).toContain("application/json")
+    expect(clonedBody).toEqual({ code: "PDF_PASSWORD_REQUIRED", reason })
+    expect(Object.keys(clonedBody).sort()).toEqual(["code", "reason"])
+    expect(JSON.stringify(clonedBody)).not.toContain("s3cret-pw-1234")
+    expect(insertAnalysis).not.toHaveBeenCalled()
+  })
+
+  it.each(["pdf_open_failed", "no_transaction_rows"])(
+    "maps unsupported PDF reason %s to a code-only 422",
+    async (reason) => {
+      parsePdfStatementWithSchema.mockRejectedValue(
+        new UnsupportedPdfFormatError(reason),
+      )
+      const response = await POST(analyzeRequest({
+        file: pdfFile(),
+        mapping: pdfMapping,
+        pdfColumnSchema: pdfSchema,
+        password: "s3cret-pw-1234",
+      }))
+      const body = await response.json()
+
+      expect(response.status).toBe(422)
+      expect(body).toEqual({ code: "UNSUPPORTED_PDF_FORMAT" })
+      expect(Object.keys(body)).toEqual(["code"])
+      expect(JSON.stringify(body)).not.toContain(reason)
+      expect(JSON.stringify(body)).not.toContain("s3cret-pw-1234")
+      expect(insertAnalysis).not.toHaveBeenCalled()
+    },
+  )
+
+  it("rethrows unknown PDF failures", async () => {
+    const failure = new Error("unknown")
+    parsePdfStatementWithSchema.mockRejectedValue(failure)
+    await expect(POST(analyzeRequest({
+      file: pdfFile(),
+      mapping: pdfMapping,
+      pdfColumnSchema: pdfSchema,
+    }))).rejects.toBe(failure)
+  })
+
+  it("never logs or exposes a PDF password across success and mapped failures", async () => {
+    const password = "s3cret-pw-1234"
+    const consoleSpies = [
+      vi.spyOn(console, "log").mockImplementation(() => undefined),
+      vi.spyOn(console, "error").mockImplementation(() => undefined),
+      vi.spyOn(console, "warn").mockImplementation(() => undefined),
+      vi.spyOn(console, "debug").mockImplementation(() => undefined),
+    ]
+
+    try {
+      maskPii.mockReturnValue(pdfMasked)
+      const outcomes = [
+        { result: pdfParsed },
+        {
+          error: Object.assign(
+            new PdfPasswordRequiredError("incorrect"),
+            { message: `bad password: ${password}` },
+          ),
+        },
+        { error: new UnsupportedPdfFormatError("pdf_open_failed") },
+      ]
+
+      for (const outcome of outcomes) {
+        parsePdfStatementWithSchema.mockReset()
+        if ("error" in outcome) {
+          parsePdfStatementWithSchema.mockRejectedValue(outcome.error)
+        } else {
+          parsePdfStatementWithSchema.mockResolvedValue(outcome.result)
+        }
+
+        const response = await POST(analyzeRequest({
+          file: pdfFile(),
+          mapping: pdfMapping,
+          password,
+          pdfColumnSchema: pdfSchema,
+        }))
+        expect(JSON.stringify(await response.json())).not.toContain(password)
+      }
+
+      for (const spy of consoleSpies) expect(spy).not.toHaveBeenCalled()
+    } finally {
+      for (const spy of consoleSpies) spy.mockRestore()
+    }
+  })
+
+  it("ignores PDF-only fields on the CSV path", async () => {
+    const response = await POST(analyzeRequest({
+      file: csvFile(),
+      mapping,
+      password: "s3cret-pw-1234",
+      pdfColumnSchema: pdfSchema,
+    }))
+
+    await expect(response.json()).resolves.toEqual({
+      analysisId: "analysis-1",
+      freeSummary,
+    })
+    expect(parseCsv).toHaveBeenCalled()
+    expect(parsePdfStatementWithSchema).not.toHaveBeenCalled()
+    expect(determinePdfColumnSchema).not.toHaveBeenCalled()
   })
 })

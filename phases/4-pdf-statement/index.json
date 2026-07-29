@@ -53,7 +53,10 @@
     {
       "step": 6,
       "name": "POST /api/analyze — PDF 분기 (pdfColumnSchema 재수신, LLM 재판정 없음)",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-07-29T17:56:42+0900",
+      "summary": "analyze API에 PDF 재파싱·스키마 적용 전용 분기와 비밀번호·공용 오류 처리를 추가하고 LLM 재판정 금지를 회귀 테스트로 고정했다.",
+      "completed_at": "2026-07-29T17:59:24+0900"
     },
     {
       "step": 7,

@@ -1,11 +1,18 @@
 import { NextResponse } from "next/server"
 
+import { claimsPdf } from "../../../lib/file-type"
+import { toPdfErrorPayload } from "../../../lib/pdf-error"
 import { getSessionUser } from "../../../lib/supabase/server"
 import { parseCsv } from "../../../services/csv-parser"
 import { generateFreeSummary } from "../../../services/llm/free-summary"
+import {
+  isPdfBuffer,
+  parsePdfStatementWithSchema,
+} from "../../../services/pdf-parser"
 import { maskPii } from "../../../services/pii-masking"
 import { insertAnalysis } from "../../../services/supabase-admin"
 import type { ConfirmedMapping, MaskedRow } from "../../../types/pipeline"
+import type { PdfColumnSchema } from "../../../types/pdf"
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0
@@ -36,6 +43,22 @@ function parseMapping(value: FormDataEntryValue | null): ConfirmedMapping | null
       amount: candidate.amount,
       category: candidate.category,
     }
+  } catch {
+    return null
+  }
+}
+
+function parsePdfColumnSchema(
+  value: FormDataEntryValue | null,
+): PdfColumnSchema | null {
+  if (typeof value !== "string" || value.trim().length === 0) return null
+
+  try {
+    const schema: unknown = JSON.parse(value)
+    if (!schema || typeof schema !== "object" || Array.isArray(schema)) {
+      return null
+    }
+    return schema as PdfColumnSchema
   } catch {
     return null
   }
@@ -81,7 +104,46 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   const buffer = Buffer.from(await file.arrayBuffer())
-  const parsed = parseCsv(buffer)
+  const isPdf = isPdfBuffer(buffer)
+  if (!isPdf && claimsPdf(file)) {
+    return NextResponse.json(
+      { code: "UNSUPPORTED_PDF_FORMAT" },
+      { status: 422 },
+    )
+  }
+
+  let parsed
+  if (isPdf) {
+    const schema = parsePdfColumnSchema(formData.get("pdfColumnSchema"))
+    if (!schema) {
+      return NextResponse.json(
+        { code: "BAD_REQUEST", reason: "pdf_schema_missing" },
+        { status: 400 },
+      )
+    }
+
+    const passwordField = formData.get("password")
+    const password =
+      typeof passwordField === "string" && passwordField.length > 0
+        ? passwordField
+        : undefined
+
+    try {
+      parsed = await parsePdfStatementWithSchema({
+        data: buffer,
+        password,
+        schema,
+      })
+    } catch (error) {
+      const payload = toPdfErrorPayload(error, password !== undefined)
+      if (payload) {
+        return NextResponse.json(payload.body, { status: payload.status })
+      }
+      throw error
+    }
+  } else {
+    parsed = parseCsv(buffer)
+  }
   const masked = maskPii(parsed)
   const rows = projectMappedColumns(masked.rows, mapping)
   const freeSummary = await generateFreeSummary({ rows, mapping })
