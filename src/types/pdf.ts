@@ -60,3 +60,33 @@ export type PdfStatementLayout = {
   numericColumns: PdfRightEdgeCluster[]
   headerLabels: { text: string; rightEdge: number }[]
 }
+
+export type PdfColumnRole =
+  | "usageAmount"
+  | "discount"
+  | "billedAmount"
+  | "points"
+  | "remainingBalance"
+  | "foreignBilledAmount"
+  | "unknown"
+
+export type PdfColumnAssignment = {
+  /** step 1이 발견한 클러스터의 right-edge */
+  rightEdge: number
+  role: PdfColumnRole
+  /** 판정 근거가 된 표 헤더 라벨. 없으면 null. PII 아님 */
+  headerLabel: string | null
+}
+
+export type PdfColumnSchema = {
+  version: 1
+  /** 추정 카드사 라벨. 확신 없으면 null */
+  issuer: string | null
+  columns: PdfColumnAssignment[]
+  /** role === "billedAmount" 인 컬럼의 rightEdge. 적용 시 이 컬럼만 계상한다 */
+  billedAmountRightEdge: number
+  /** 적용 시 right-edge 허용오차 */
+  rightEdgeTolerance: number
+  /** 0~1 */
+  confidence: number
+}

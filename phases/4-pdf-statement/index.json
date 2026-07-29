@@ -29,7 +29,10 @@
     {
       "step": 3,
       "name": "LLM 컬럼 의미 판정 → PdfColumnSchema",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-07-29T17:42:04+0900",
+      "summary": "레댁션 게이트 이후 동적 숫자 컬럼 의미를 LLM으로 판정하고 검증 가능한 PdfColumnSchema로 직렬화하는 흐름을 추가했다.",
+      "completed_at": "2026-07-29T17:46:11+0900"
     },
     {
       "step": 4,
