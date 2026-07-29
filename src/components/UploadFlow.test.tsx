@@ -31,6 +31,11 @@ const freeSummary = {
   categoryTotals: { 카페: 45_000 },
   topMerchants: [{ merchant: "스타벅스", amount: 45_000 }],
 };
+const pdfColumnSchema = {
+  version: 1,
+  columns: [{ cluster: { rightEdge: 412.75 }, semantic: "billedAmount" }],
+  opaqueMarker: "schema-must-not-render",
+};
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -150,6 +155,166 @@ describe("UploadFlow", () => {
     const body = fetchMock.mock.calls[0][1].body as FormData;
     expect([...body.keys()]).toEqual(["file"]);
     expect(body.get("file")).toBe(file);
+  });
+
+  it("round-trips an unencrypted PDF schema to analyze and shows only the billing notice", async () => {
+    const pdfMapping = { ...mapping, confidence: 1 };
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({ mapping: pdfMapping, sample, pdfColumnSchema }))
+      .mockResolvedValueOnce(jsonResponse({ analysisId: "pdf-analysis", freeSummary }));
+    vi.stubGlobal("fetch", fetchMock);
+    render(<UploadFlow isSubscribed={false} />);
+    const file = new File(["%PDF-plain"], "statement.pdf", { type: "application/pdf" });
+    fireEvent.change(screen.getByLabelText("CSV 또는 PDF 파일 선택"), {
+      target: { files: [file] },
+    });
+    await screen.findByTestId("mapping-card");
+    expect(document.body).not.toHaveTextContent(pdfColumnSchema.opaqueMarker);
+
+    fireEvent.click(screen.getByRole("button", { name: "분석 시작" }));
+
+    const notice = await screen.findByTestId("pdf-billing-notice");
+    const body = fetchMock.mock.calls[1][1].body as FormData;
+    expect([...body.keys()]).toEqual(["file", "mapping", "pdfColumnSchema"]);
+    expect(body.get("file")).toBe(file);
+    expect(body.get("password")).toBeNull();
+    expect(JSON.parse(body.get("pdfColumnSchema") as string)).toEqual(pdfColumnSchema);
+    expect(notice.tagName).toBe("P");
+    expect(notice).toHaveTextContent("이번 달 청구액");
+    expect(notice).toHaveTextContent("할부");
+    expect(notice).toHaveClass("text-[13px]", "leading-relaxed", "text-[#a8acb3]");
+    expect(notice.className).not.toMatch(/rounded-\[24px\]|border-l-4|bg-\[#16181c\]|bg-\[#0a0b0d\]/);
+    expect(notice.querySelector("svg")).toBeNull();
+    expect(document.body).not.toHaveTextContent(pdfColumnSchema.opaqueMarker);
+  });
+
+  it("sends the retained password and opaque schema with the identical encrypted PDF", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        jsonResponse({ code: "PDF_PASSWORD_REQUIRED", reason: "missing" }, 409),
+      )
+      .mockResolvedValueOnce(jsonResponse({ mapping, sample, pdfColumnSchema }))
+      .mockResolvedValueOnce(jsonResponse({ analysisId: "pdf-analysis", freeSummary }));
+    vi.stubGlobal("fetch", fetchMock);
+    render(<UploadFlow isSubscribed={false} />);
+    const file = new File(["%PDF-encrypted"], "statement.pdf", { type: "application/pdf" });
+    fireEvent.change(screen.getByLabelText("CSV 또는 PDF 파일 선택"), {
+      target: { files: [file] },
+    });
+    fireEvent.change(await screen.findByLabelText("명세서 비밀번호"), {
+      target: { value: "pdf-secret" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "비밀번호 확인" }));
+    await screen.findByTestId("mapping-card");
+    fireEvent.click(screen.getByRole("button", { name: "분석 시작" }));
+
+    await screen.findByTestId("pdf-billing-notice");
+    const body = fetchMock.mock.calls[2][1].body as FormData;
+    expect([...body.keys()]).toEqual(["file", "mapping", "password", "pdfColumnSchema"]);
+    expect(body.get("file")).toBe(file);
+    expect(body.get("password")).toBe("pdf-secret");
+    expect(JSON.parse(body.get("pdfColumnSchema") as string)).toEqual(pdfColumnSchema);
+  });
+
+  it("prompts on analyze 409 and retries analyze with the same confirmed payload", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({ mapping, sample, pdfColumnSchema }))
+      .mockResolvedValueOnce(
+        jsonResponse({ code: "PDF_PASSWORD_REQUIRED", reason: "missing" }, 409),
+      )
+      .mockResolvedValueOnce(jsonResponse({ analysisId: "pdf-analysis", freeSummary }));
+    vi.stubGlobal("fetch", fetchMock);
+    render(<UploadFlow isSubscribed={false} />);
+    const file = new File(["%PDF-late-password"], "statement.pdf", {
+      type: "application/pdf",
+    });
+    fireEvent.change(screen.getByLabelText("CSV 또는 PDF 파일 선택"), {
+      target: { files: [file] },
+    });
+    await screen.findByTestId("mapping-card");
+    fireEvent.click(screen.getByRole("button", { name: "분석 시작" }));
+
+    const prompt = await screen.findByText(
+      "이 PDF는 비밀번호로 보호되어 있어요. 명세서 비밀번호를 입력해 주세요.",
+    );
+    expect(prompt.closest('[data-component="PasswordPrompt"]')).toBeInTheDocument();
+    expect(document.querySelector('[data-component="ErrorModal"]')).not.toBeInTheDocument();
+    expect(screen.getByTestId("mapping-card")).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("명세서 비밀번호"), {
+      target: { value: "late-secret" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "비밀번호 확인" }));
+
+    await screen.findByTestId("pdf-billing-notice");
+    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
+      "/api/upload",
+      "/api/analyze",
+      "/api/analyze",
+    ]);
+    const firstAnalyze = fetchMock.mock.calls[1][1].body as FormData;
+    const retriedAnalyze = fetchMock.mock.calls[2][1].body as FormData;
+    expect(retriedAnalyze.get("file")).toBe(file);
+    expect(retriedAnalyze.get("mapping")).toBe(firstAnalyze.get("mapping"));
+    expect(retriedAnalyze.get("pdfColumnSchema")).toBe(firstAnalyze.get("pdfColumnSchema"));
+    expect(retriedAnalyze.get("password")).toBe("late-secret");
+  });
+
+  it("uses analyze incorrect reason, clears the field, and never exposes the password", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({ mapping, sample, pdfColumnSchema }))
+      .mockResolvedValueOnce(
+        jsonResponse({ code: "PDF_PASSWORD_REQUIRED", reason: "incorrect" }, 409),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+    render(<UploadFlow isSubscribed={false} />);
+    fireEvent.change(screen.getByLabelText("CSV 또는 PDF 파일 선택"), {
+      target: {
+        files: [new File(["%PDF-"], "statement.pdf", { type: "application/pdf" })],
+      },
+    });
+    await screen.findByTestId("mapping-card");
+    fireEvent.click(screen.getByRole("button", { name: "분석 시작" }));
+
+    expect(
+      await screen.findByText("비밀번호가 맞지 않아요. 다시 입력해 주세요."),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("명세서 비밀번호")).toHaveValue("");
+    expect(document.querySelector('[data-component="ErrorModal"]')).not.toBeInTheDocument();
+  });
+
+  it("clears PDF-only state before a new CSV analysis", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({ mapping, sample, pdfColumnSchema }))
+      .mockResolvedValueOnce(jsonResponse({ mapping, sample }))
+      .mockResolvedValueOnce(jsonResponse({ analysisId: "csv-analysis", freeSummary }));
+    vi.stubGlobal("fetch", fetchMock);
+    render(<UploadFlow isSubscribed={false} />);
+    fireEvent.change(screen.getByLabelText("CSV 또는 PDF 파일 선택"), {
+      target: {
+        files: [new File(["%PDF-"], "statement.pdf", { type: "application/pdf" })],
+      },
+    });
+    await screen.findByTestId("mapping-card");
+    fireEvent.click(screen.getByRole("button", { name: "다시 올리기" }));
+
+    const csv = new File(["csv"], "transactions.csv", { type: "text/csv" });
+    fireEvent.change(screen.getByLabelText("CSV 또는 PDF 파일 선택"), {
+      target: { files: [csv] },
+    });
+    await screen.findByTestId("mapping-card");
+    fireEvent.click(screen.getByRole("button", { name: "분석 시작" }));
+
+    await screen.findByText("1,250,000원");
+    const body = fetchMock.mock.calls[2][1].body as FormData;
+    expect([...body.keys()]).toEqual(["file", "mapping"]);
+    expect(body.get("password")).toBeNull();
+    expect(body.get("pdfColumnSchema")).toBeNull();
+    expect(screen.queryByTestId("pdf-billing-notice")).toBeNull();
   });
 
   it("treats password-required as a prompt and retries with the identical File", async () => {
@@ -277,7 +442,8 @@ describe("UploadFlow", () => {
       .mockResolvedValueOnce(
         jsonResponse({ code: "PDF_PASSWORD_REQUIRED", reason: "missing" }, 409),
       )
-      .mockResolvedValueOnce(jsonResponse({ mapping, sample }));
+      .mockResolvedValueOnce(jsonResponse({ mapping, sample, pdfColumnSchema }))
+      .mockResolvedValueOnce(jsonResponse({ analysisId: "pdf-analysis", freeSummary }));
     vi.stubGlobal("fetch", fetchMock);
     render(<UploadFlow isSubscribed={false} />);
     fireEvent.change(screen.getByLabelText("CSV 또는 PDF 파일 선택"), {
@@ -288,6 +454,8 @@ describe("UploadFlow", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "비밀번호 확인" }));
     await screen.findByTestId("mapping-card");
+    fireEvent.click(screen.getByRole("button", { name: "분석 시작" }));
+    await screen.findByTestId("pdf-billing-notice");
 
     expect(screen.queryByText(secret)).not.toBeInTheDocument();
     expect(localStorage.getItem(secret)).toBeNull();
@@ -296,20 +464,38 @@ describe("UploadFlow", () => {
     expect(window.location.search).not.toContain(secret);
     expect(fetchMock.mock.calls.every(([url]) => !String(url).includes(secret))).toBe(true);
     expect((fetchMock.mock.calls[1][1].body as FormData).get("password")).toBe(secret);
+    expect((fetchMock.mock.calls[2][1].body as FormData).get("password")).toBe(secret);
   });
 
-  it("routes unsupported PDFs to ErrorModal without exposing status or code", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue(jsonResponse({ code: "UNSUPPORTED_PDF_FORMAT" }, 422)),
-    );
+  it.each(["upload", "analyze"])(
+    "routes unsupported PDFs from %s to the mapped ErrorModal without exposing internals",
+    async (stage) => {
+    const fetchMock = vi.fn();
+    if (stage === "upload") {
+      fetchMock.mockResolvedValue(
+        jsonResponse({ code: "UNSUPPORTED_PDF_FORMAT" }, 422),
+      );
+    } else {
+      fetchMock
+        .mockResolvedValueOnce(jsonResponse({ mapping, sample, pdfColumnSchema }))
+        .mockResolvedValueOnce(
+          jsonResponse({ code: "UNSUPPORTED_PDF_FORMAT" }, 422),
+        );
+    }
+    vi.stubGlobal("fetch", fetchMock);
     render(<UploadFlow isSubscribed={false} />);
     fireEvent.change(screen.getByLabelText("CSV 또는 PDF 파일 선택"), {
       target: { files: [new File(["%PDF-"], "statement.pdf", { type: "application/pdf" })] },
     });
+    if (stage === "analyze") {
+      await screen.findByTestId("mapping-card");
+      fireEvent.click(screen.getByRole("button", { name: "분석 시작" }));
+    }
 
     const modal = await screen.findByRole("dialog");
     expect(modal).toHaveAttribute("data-component", "ErrorModal");
+    expect(modal).toHaveTextContent("이 명세서 형식은 아직 읽을 수 없어요.");
+    expect(modal).toHaveTextContent("CSV");
     expect(modal).not.toHaveTextContent("UNSUPPORTED_PDF_FORMAT");
     expect(modal).not.toHaveTextContent("422");
     expect(document.querySelector('[data-component="PasswordPrompt"]')).not.toBeInTheDocument();

@@ -12,6 +12,13 @@ function response(code: string, status: number) {
   });
 }
 
+function responseWithReason(code: string, reason: string, status: number) {
+  return new Response(JSON.stringify({ code, reason }), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
 function Harness({ apiResponse }: { apiResponse: Response }) {
   const { error, isOpen, handleResponse, close } = useApiError();
 
@@ -58,6 +65,46 @@ describe("ErrorModal with useApiError", () => {
     expect(await screen.findByRole("dialog")).toHaveTextContent(
       "문제가 발생했어요. 잠시 후 다시 시도해 주세요.",
     );
+  });
+
+  it("maps unsupported PDF formats to a safe CSV alternative without exposing internals", async () => {
+    render(<Harness apiResponse={response("UNSUPPORTED_PDF_FORMAT", 422)} />);
+    fireEvent.click(screen.getByRole("button", { name: "요청" }));
+
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog).toHaveTextContent("이 명세서 형식은 아직 읽을 수 없어요.");
+    expect(dialog).toHaveTextContent("CSV");
+    expect(dialog).not.toHaveTextContent("UNSUPPORTED_PDF_FORMAT");
+    expect(dialog).not.toHaveTextContent("422");
+  });
+
+  it("uses a recovery message for a missing PDF schema", async () => {
+    render(
+      <Harness
+        apiResponse={responseWithReason("BAD_REQUEST", "pdf_schema_missing", 400)}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "요청" }));
+
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog).toHaveTextContent("분석 정보가 만료됐어요. 파일을 다시 올려주세요.");
+    expect(dialog).not.toHaveTextContent("파일 형식을 확인");
+    expect(dialog).not.toHaveTextContent("pdf_schema_missing");
+    expect(dialog).not.toHaveTextContent("BAD_REQUEST");
+    expect(dialog).not.toHaveTextContent("400");
+  });
+
+  it.each([
+    [response("BAD_REQUEST", 400), "파일을 읽지 못했어요. 파일 형식을 확인해 주세요."],
+    [
+      responseWithReason("BAD_REQUEST", "unknown_reason", 400),
+      "파일을 읽지 못했어요. 파일 형식을 확인해 주세요.",
+    ],
+  ])("preserves code-only fallback behavior for missing or unknown reasons", async (apiResponse, message) => {
+    render(<Harness apiResponse={apiResponse} />);
+    fireEvent.click(screen.getByRole("button", { name: "요청" }));
+
+    expect(await screen.findByRole("dialog")).toHaveTextContent(message);
   });
 
   it("falls back when parsing the response body fails", async () => {

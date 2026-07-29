@@ -24,6 +24,7 @@ interface UploadSample {
 interface UploadResponse {
   mapping: ColumnMapping;
   sample: UploadSample;
+  pdfColumnSchema?: unknown;
 }
 
 interface AnalyzeResponse {
@@ -34,6 +35,7 @@ interface AnalyzeResponse {
 type Step = "idle" | "confirming" | "done";
 type MappingField = keyof ConfirmedMapping;
 type PasswordPromptReason = "missing" | "incorrect";
+type PendingStage = "upload" | "analyze";
 
 const FIELD_LABELS: Record<MappingField, string> = {
   date: "날짜 컬럼",
@@ -41,6 +43,20 @@ const FIELD_LABELS: Record<MappingField, string> = {
   amount: "금액 컬럼",
   category: "카테고리 컬럼",
 };
+
+async function getPasswordPromptReason(
+  response: Response,
+): Promise<PasswordPromptReason | null> {
+  if (response.status !== 409) return null;
+
+  const body = (await response
+    .clone()
+    .json()
+    .catch(() => null)) as { code?: unknown; reason?: unknown } | null;
+  if (body?.code !== "PDF_PASSWORD_REQUIRED") return null;
+
+  return body.reason === "incorrect" ? "incorrect" : "missing";
+}
 
 export function UploadFlow({ isSubscribed }: UploadFlowProps) {
   const [step, setStep] = useState<Step>("idle");
@@ -52,6 +68,8 @@ export function UploadFlow({ isSubscribed }: UploadFlowProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [fileValidationMessage, setFileValidationMessage] = useState<string | null>(null);
   const [password, setPassword] = useState("");
+  const [pdfColumnSchema, setPdfColumnSchema] = useState<unknown>(undefined);
+  const [pendingStage, setPendingStage] = useState<PendingStage | null>(null);
   const [passwordPrompt, setPasswordPrompt] = useState<{
     reason: PasswordPromptReason;
   } | null>(null);
@@ -87,25 +105,21 @@ export function UploadFlow({ isSubscribed }: UploadFlowProps) {
 
     try {
       const response = await fetch("/api/upload", { method: "POST", body });
-      if (!response.ok && response.status === 409) {
-        const passwordError = (await response
-          .clone()
-          .json()
-          .catch(() => null)) as { code?: unknown; reason?: unknown } | null;
-        if (passwordError?.code === "PDF_PASSWORD_REQUIRED") {
-          const reason: PasswordPromptReason =
-            passwordError.reason === "incorrect" ? "incorrect" : "missing";
-          if (reason === "incorrect") {
-            setPassword("");
-          }
-          setPasswordPrompt({ reason });
-          return;
+      const promptReason = await getPasswordPromptReason(response);
+      if (promptReason) {
+        if (promptReason === "incorrect") {
+          setPassword("");
         }
+        setPendingStage("upload");
+        setPasswordPrompt({ reason: promptReason });
+        return;
       }
       if (await handleResponse(response)) return;
       const data = (await response.json()) as UploadResponse;
       setMapping(data.mapping);
       setSample(data.sample);
+      setPdfColumnSchema(data.pdfColumnSchema);
+      setPendingStage(null);
       setPasswordPrompt(null);
       setStep("confirming");
     } catch {
@@ -122,9 +136,9 @@ export function UploadFlow({ isSubscribed }: UploadFlowProps) {
     setMapping(null);
     setResult(null);
     setFileValidationMessage(null);
-    if (password) {
-      setPassword("");
-    }
+    setPassword("");
+    setPdfColumnSchema(undefined);
+    setPendingStage(null);
     setPasswordPrompt(null);
   }
 
@@ -134,7 +148,7 @@ export function UploadFlow({ isSubscribed }: UploadFlowProps) {
     );
   }
 
-  async function analyze() {
+  async function analyze(submittedPassword = password) {
     if (!file || !mapping?.date || !mapping.merchant || !mapping.amount) return;
     const confirmed: ConfirmedMapping = {
       date: mapping.date,
@@ -145,13 +159,30 @@ export function UploadFlow({ isSubscribed }: UploadFlowProps) {
     const body = new FormData();
     body.append("file", file);
     body.append("mapping", JSON.stringify(confirmed));
+    if (submittedPassword) {
+      body.append("password", submittedPassword);
+    }
+    if (pdfColumnSchema !== undefined) {
+      body.append("pdfColumnSchema", JSON.stringify(pdfColumnSchema));
+    }
     setIsWorking(true);
 
     try {
       const response = await fetch("/api/analyze", { method: "POST", body });
+      const promptReason = await getPasswordPromptReason(response);
+      if (promptReason) {
+        if (promptReason === "incorrect") {
+          setPassword("");
+        }
+        setPendingStage("analyze");
+        setPasswordPrompt({ reason: promptReason });
+        return;
+      }
       if (await handleResponse(response)) return;
       const data = (await response.json()) as AnalyzeResponse;
       setResult(data);
+      setPendingStage(null);
+      setPasswordPrompt(null);
       setStep("done");
     } catch {
       await handleResponse(new Response("", { status: 500 }));
@@ -229,7 +260,11 @@ export function UploadFlow({ isSubscribed }: UploadFlowProps) {
         onSubmit={(submittedPassword) => {
           if (!file) return;
           setPassword(submittedPassword);
-          void upload(file, submittedPassword);
+          if (pendingStage === "analyze") {
+            void analyze(submittedPassword);
+          } else {
+            void upload(file, submittedPassword);
+          }
         }}
         reason={passwordPrompt?.reason ?? "missing"}
       />
@@ -296,6 +331,15 @@ export function UploadFlow({ isSubscribed }: UploadFlowProps) {
 
       {step === "done" && result ? (
         <div className="slide-up space-y-8">
+          {pdfColumnSchema !== undefined ? (
+            <p
+              className="text-[13px] leading-relaxed text-[#a8acb3]"
+              data-testid="pdf-billing-notice"
+            >
+              PDF 명세서는 이번 달 청구액을 기준으로 계산했어요. 할부는 총액이 아니라 이번 달
+              청구 회차 금액만 반영돼요.
+            </p>
+          ) : null}
           <FreeSummaryCards summary={result.freeSummary} />
           <PremiumSection analysisId={result.analysisId} isSubscribed={isSubscribed} />
         </div>
