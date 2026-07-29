@@ -140,12 +140,19 @@ cluster.y 를 이동평균으로 갱신한다: y = (y * (n-1) + item.y) / n
 ## Acceptance Criteria
 
 - [ ] (TDD) `src/services/pdf-parser/layout.test.ts`가 먼저 작성되고, 픽스처 `nh-statement-sample.pdf`(비밀번호 `000000`)를 `extractPdfTextItems`로 읽어 `buildStatementLayout`에 넣는 방식으로 검증한다.
-- [ ] (골든값 — 거래행 34건) `layout.transactionLines.length === 34`인 테스트가 통과한다.
+> **⚠️ 35 vs 34 — 혼동 주의 (리더가 픽스처로 실측 확정).**
+> `transactionLines`는 **거래행 후보**이며 해외 섹션 상세 행 1개를 **포함한다 → 35개**다(154행 참조).
+> 최종 계상 대상 **34건**은 "청구금액 컬럼 값을 정확히 1개 갖는 행"만 남긴 결과이며,
+> 그 필터는 이 step이 아니라 **step 4**에서 적용된다.
+> 즉 이 step의 골든값은 `transactionLines = 35` / `청구금액 클러스터 rowCount = 34` / `청구금액 합 = 882,646`이다.
+> 리더가 `nh-statement-sample.pdf`로 직접 확인한 값이다. 두 숫자를 같게 만들려 하지 마라.
+
+- [ ] (골든값 — 거래행 후보 35건) `layout.transactionLines.length === 35`인 테스트가 통과한다(국내 34행 + 해외 상세 1행).
 - [ ] (골든값 — 소계/합계 배제) `layout.transactionLines` 중 `text`에 `소계` 또는 `합계`가 포함된 라인이 **0개**이고, `layout.excludedLines`에 role `"subtotal"` 2개와 `"total"` 1개가 있는 테스트가 통과한다. 소계 행에 가명 실명 `홍길동`이 들어 있음도 함께 단정해, 이 행이 거래로 새지 않음을 명시한다.
 - [ ] (골든값 — page1 PII 라인이 거래 후보가 아님) `성명`/`주소`/`결제계좌`를 포함하는 page1 라인들이 모두 `excludedLines`에 있고 `transactionLines`에 없다는 테스트가 통과한다.
 - [ ] (**CRITICAL 회귀 — fuzzy 클러스터링 없으면 조용히 틀림**) 다음 두 단정이 한 테스트에 함께 있어야 한다:
-      (1) `yTolerance` 기본값(0.5)에서 `transactionLines.length === 34`이고 청구금액 컬럼(rowCount 34인 클러스터) 값 합이 **882,646**이다.
-      (2) `buildStatementLayout(doc, { yTolerance: 0 })`로 바꾸면 거래행 수가 **34보다 작아지고** 청구금액 합이 **882,646이 아니다**. (픽스처 설계상 22건 / 669,446이 예상값이며, 최소한 부등식은 반드시 성립해야 한다.)
+      (1) `yTolerance` 기본값(0.5)에서 `transactionLines.length === 35`이고 청구금액 컬럼(rowCount 34인 클러스터) 값 합이 **882,646**이다.
+      (2) `buildStatementLayout(doc, { yTolerance: 0 })`로 바꾸면 거래행 후보 수가 **35보다 작아지고** 청구금액 합이 **882,646이 아니다**. (픽스처 설계상 22건 / 669,446이 예상값이며, 최소한 부등식은 반드시 성립해야 한다.)
       또한 구현 코드에 `Math.round(y` 패턴이 없음을 grep으로 확인한다.
 - [ ] (right-edge 컬럼 동적 발견) `layout.numericColumns`에 대해 다음이 통과한다: `rowCount === 34`인 클러스터가 존재하고 그 `rightEdge`가 `407.0 ± 1.5`이다. `rowCount === 32`(이용금액, `275.5 ± 1.5`), `rowCount === 34`(포인트, `445.5 ± 1.5`), `rowCount === 4`(할부잔여, `558.5 ± 1.5`) 클러스터가 각각 존재한다.
 - [ ] (좌표 하드코딩 금지) `src/services/pdf-parser/layout.ts`에 `275.5`, `407`, `445.5`, `558.5` 리터럴이 **하나도 없음**을 grep으로 확인한다. 코드에 있는 좌표 상수는 `Y_CLUSTER_TOLERANCE`(0.5)와 `RIGHT_EDGE_TOLERANCE`(1.5)뿐이다.
