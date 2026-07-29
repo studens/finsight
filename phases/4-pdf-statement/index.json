@@ -21,7 +21,10 @@
     {
       "step": 2,
       "name": "레댁션 게이트 — LLM 전달 직전 PII 차단 (차단형)",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-07-29T17:38:26+0900",
+      "summary": "LLM 전달 전 6종 PII 패턴을 탐지해 원문 노출 없이 예외로 차단하는 레댁션 게이트와 PDF 픽스처 통합 테스트를 추가했다.",
+      "completed_at": "2026-07-29T17:41:12+0900"
     },
     {
       "step": 3,
