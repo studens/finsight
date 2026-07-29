@@ -13,7 +13,9 @@
     {
       "step": 1,
       "name": "fuzzy y 행 그룹핑 + 거래행 후보 필터 + right-edge 컬럼 클러스터 발견",
-      "status": "pending"
+      "status": "blocked",
+      "started_at": "2026-07-29T16:58:49+0900",
+      "blocked_reason": "검증 문서와 픽스처는 transaction role 행이 국내 34개 + 해외 상세 1개로 총 35개임을 보장하지만, AC는 해외 상세를 transaction으로 유지하면서 transactionLines.length === 34도 동시에 요구해 모순됩니다. transactionLines를 35개 후보로 둘지, 34개 계상 대상만 둘지 결정이 필요합니다."
     },
     {
       "step": 2,
