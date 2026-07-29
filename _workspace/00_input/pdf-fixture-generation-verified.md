@@ -40,7 +40,7 @@ const TX = [
 
 const doc = new PDFDocument({
   size: 'A4', margin: 0,
-  userPassword: '000000',        // ← 테스트용 비밀번호
+  userPassword: '000000',        // ← 합성 픽스처 전용 비밀번호
   ownerPassword: 'owner-secret',
   pdfVersion: '1.6',             // AES 사용
 })
@@ -103,7 +103,7 @@ right-edge 히스토그램: 275.5×4  407×7  445.5×5  558.5×1
 
 결과: 5건, 합계 279,612
 기대: 5건, 279,612  → ✅ 일치
-실명 "[REDACTED_REAL_NAME]" 포함: ✅ 없음
+실제 실명 포함: ✅ 없음
 ```
 
 주목할 점:

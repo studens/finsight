@@ -162,5 +162,5 @@ parsePdfStatement → parsed(ParsedCsv) → maskPii → generateFreeSummary → 
 
 ## 픽스처 정책 (CRITICAL — qa가 반드시 확인)
 
-`git grep`으로 다음이 **각각 0건**이어야 한다: `[REDACTED_REAL_NAME]` / `[REDACTED_REAL_ADDRESS]` / `[REDACTED_REAL_ACCOUNT]` / `000000`(사용자의 실제 비밀번호 = 생년월일).
+`git grep`으로 알려진 실제 실명 / 주소 / 계좌 / 비밀번호가 **각각 0건**이어야 한다(실제 비밀번호는 사용자의 생년월일이므로 문서에도 기록하지 않는다).
 픽스처 비밀번호는 `000000`. 실제 명세서 PDF는 커밋하지 않는다. 픽스처는 `pdfkit`(devDependency) + macOS 시스템 폰트로 **한 번 생성해 커밋**하고, 테스트는 읽기만 한다 — `src/` 어디에도 `pdfkit` import나 시스템 폰트 경로가 없어야 한다.

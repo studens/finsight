@@ -5,7 +5,9 @@
     {
       "step": 0,
       "name": "pdfjs-dist 도입 + 합성 암호화 PDF 픽스처 + 좌표 텍스트 추출",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-07-29T16:52:32+0900",
+      "summary": "pdfjs-dist 좌표 추출기와 암호화·연말경계·무거래 합성 PDF 픽스처 3종 및 골든 회귀 테스트를 추가했다."
     },
     {
       "step": 1,
@@ -47,5 +49,6 @@
       "name": "UploadFlow 상태 확장 + PDF 에러 문구 + '이번 달 청구액 기준' 안내",
       "status": "pending"
     }
-  ]
+  ],
+  "created_at": "2026-07-29T16:52:32+0900"
 }

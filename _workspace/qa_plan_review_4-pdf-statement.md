@@ -34,7 +34,7 @@
 | 게이트 미통과 텍스트가 LLM에 미전달 | step3 (`generateAnalysisText` 미호출 단정) | ✅ |
 | 게이트 **오탐 금지**(정상 업로드가 422로 막히는 사고 방지) | step2 (쉼표를 카드번호 구분자로 인정 금지) | ✅ |
 | 비밀번호 로그·응답·에러메시지 미기록 | step0/2/5/6/7/8 (`console.` 검사 포함) | ✅ 6개 step 전부 |
-| 실제 PII·실제 비밀번호 미커밋 | step0:229 | ✅ `git grep` 0건: `[REDACTED_REAL_NAME]` / `[REDACTED_REAL_ADDRESS]` / `[REDACTED_REAL_ACCOUNT]` / **`000000`** |
+| 실제 PII·실제 비밀번호 미커밋 | step0:229 | ✅ 알려진 실제 실명 / 주소 / 계좌 / 비밀번호에 대한 `git grep` 0건 |
 | 픽스처 비밀번호를 별도 값으로 | step0 | ✅ `000000` |
 | 원본 PDF 미보관 | step0/5/6 | ✅ |
 | 내부 진단 라벨 응답 유출 차단 | step5:243, step6:253 | ✅ `JSON.stringify(body)`에 `pdf_open_failed` 미포함 |

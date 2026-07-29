@@ -96,7 +96,7 @@ export function isPdfBuffer(input: Buffer | Uint8Array): boolean
 ### 0-5. 픽스처 (CRITICAL)
 
 사용자가 제공한 실제 NH농협 PDF는 **커밋하지 않는다.** 다음 문자열이 저장소 어디에도 들어가면 안 된다:
-실명 `[REDACTED_REAL_NAME]`, 주소 `[REDACTED_REAL_ADDRESS]`, 계좌 `[REDACTED_REAL_ACCOUNT]`, **그리고 실제 비밀번호 `000000`**(참조 문서에 예시로 적혀 있으나 이는 사용자의 실제 생년월일이다).
+실명 `[REDACTED_REAL_NAME]`, 주소 `[REDACTED_REAL_ADDRESS]`, 계좌 `[REDACTED_REAL_ACCOUNT]`, **그리고 실제 비밀번호 `[REDACTED_REAL_PASSWORD]`**(참조 문서에 예시로 적혀 있었으나 사용자의 실제 생년월일이므로 제거했다).
 
 가명·테스트값만 사용한다: `홍길동`, `123********99`, `04524 서울특별시 중구 세종대로 110`, `010-1234-5678`, 비밀번호 **`000000`**, ownerPassword `owner-secret-test`.
 
@@ -226,7 +226,7 @@ export function readPdfFixture(name: string): Buffer   // __fixtures__ 기준 �
 - [ ] `next.config.ts`가 생성되고 `serverExternalPackages`에 `"pdfjs-dist"`가 포함된다. `npm run build`가 성공한다.
 - [ ] (비밀번호 3케이스 + code 구분) `nh-statement-sample.pdf`로 다음 테스트가 통과한다: (1) password 미제공 → `PdfPasswordRequiredError` & `passwordCase === "missing"`, (2) `wrong-pw` → `PdfPasswordRequiredError` & `passwordCase === "incorrect"`, (3) `000000` → 예외 없이 resolve되고 `pages.length === 3`.
 - [ ] (비밀번호 미기록 CRITICAL) (2)에서 잡은 에러의 `message`에 `wrong-pw`와 `000000`이 **포함되지 않는다**고 단정하는 테스트가 통과한다. `src/services/pdf-parser/`(테스트·`__fixtures__` 제외) 전체에 `console.` 호출이 없고 `password`를 로그·에러 메시지·리턴값에 넣는 코드가 없음을 grep으로 확인한다.
-- [ ] (실제 PII·실제 비밀번호 미커밋 CRITICAL) `git grep -n "[REDACTED_REAL_NAME]"`, `git grep -n "[REDACTED_REAL_ADDRESS]"`, `git grep -n "302\*\*\*\*\*\*\*\*11"`, `git grep -n "000000"`이 **각각 0건**이다. 픽스처 비밀번호는 `000000`이다.
+- [ ] (실제 PII·실제 비밀번호 미커밋 CRITICAL) 알려진 실제 실명·주소·계좌·비밀번호 문자열에 대한 `git grep` 결과가 **각각 0건**이다. 픽스처 비밀번호는 `000000`이다.
 - [ ] (손상 파일) `%PDF-`로 시작하지만 내용이 깨진 바이트열에서 `UnsupportedPdfFormatError`(`reason === "pdf_open_failed"`)가 throw되고 pdfjs 원본 예외 메시지가 노출되지 않는 테스트가 통과한다.
 - [ ] (이미지 PDF를 여기서 거부하지 않음) `extract-text.ts`에 "텍스트 길이/아이템 개수가 적으면 throw"하는 코드가 **없다.** `no-transactions-sample.pdf`가 예외 없이 resolve되는 테스트가 통과한다.
 - [ ] `PdfTextItem`에 `width`가 있고 pdfjs `item.width`를 그대로 채운다. 좌표에 `Math.round`가 쓰이지 않음을 grep으로 확인한다.
