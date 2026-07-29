@@ -61,7 +61,10 @@
     {
       "step": 7,
       "name": "드롭존 PDF 허용 + 비밀번호 입력 모달 (원본 File 메모리 유지)",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-07-29T18:00:24+0900",
+      "summary": "CSV·PDF 드롭존 검증과 원본 File을 유지하는 암호화 PDF 비밀번호 재시도 모달 흐름을 추가했다.",
+      "completed_at": "2026-07-29T18:04:30+0900"
     },
     {
       "step": 8,

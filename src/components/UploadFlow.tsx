@@ -6,6 +6,7 @@ import { useApiError } from "../hooks/useApiError";
 import type { ColumnMapping, ConfirmedMapping, FreeSummary, RawRow } from "../types/pipeline";
 import { ErrorModal } from "./ErrorModal";
 import { FreeSummaryCards } from "./FreeSummaryCards";
+import { PasswordPrompt } from "./PasswordPrompt";
 import { PremiumSection } from "./PremiumSection";
 import { Button } from "./ui/button";
 
@@ -32,6 +33,7 @@ interface AnalyzeResponse {
 
 type Step = "idle" | "confirming" | "done";
 type MappingField = keyof ConfirmedMapping;
+type PasswordPromptReason = "missing" | "incorrect";
 
 const FIELD_LABELS: Record<MappingField, string> = {
   date: "날짜 컬럼",
@@ -48,20 +50,63 @@ export function UploadFlow({ isSubscribed }: UploadFlowProps) {
   const [result, setResult] = useState<AnalyzeResponse | null>(null);
   const [isWorking, setIsWorking] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [fileValidationMessage, setFileValidationMessage] = useState<string | null>(null);
+  const [password, setPassword] = useState("");
+  const [passwordPrompt, setPasswordPrompt] = useState<{
+    reason: PasswordPromptReason;
+  } | null>(null);
   const { error, isOpen, handleResponse, close } = useApiError();
 
-  async function upload(selectedFile: File) {
+  function isSupportedFile(selectedFile: File) {
+    const extension = selectedFile.name.toLowerCase().split(".").pop();
+    return (
+      extension === "csv" ||
+      extension === "pdf" ||
+      selectedFile.type === "text/csv" ||
+      selectedFile.type === "application/pdf"
+    );
+  }
+
+  function selectFile(selectedFile: File) {
+    if (!isSupportedFile(selectedFile)) {
+      setFileValidationMessage("CSV 또는 PDF 파일만 올릴 수 있어요.");
+      return;
+    }
+    setFileValidationMessage(null);
+    void upload(selectedFile);
+  }
+
+  async function upload(selectedFile: File, submittedPassword?: string) {
     setFile(selectedFile);
     setIsWorking(true);
     const body = new FormData();
     body.append("file", selectedFile);
+    if (submittedPassword) {
+      body.append("password", submittedPassword);
+    }
 
     try {
       const response = await fetch("/api/upload", { method: "POST", body });
+      if (!response.ok && response.status === 409) {
+        const passwordError = (await response
+          .clone()
+          .json()
+          .catch(() => null)) as { code?: unknown; reason?: unknown } | null;
+        if (passwordError?.code === "PDF_PASSWORD_REQUIRED") {
+          const reason: PasswordPromptReason =
+            passwordError.reason === "incorrect" ? "incorrect" : "missing";
+          if (reason === "incorrect") {
+            setPassword("");
+          }
+          setPasswordPrompt({ reason });
+          return;
+        }
+      }
       if (await handleResponse(response)) return;
       const data = (await response.json()) as UploadResponse;
       setMapping(data.mapping);
       setSample(data.sample);
+      setPasswordPrompt(null);
       setStep("confirming");
     } catch {
       await handleResponse(new Response("", { status: 500 }));
@@ -76,6 +121,11 @@ export function UploadFlow({ isSubscribed }: UploadFlowProps) {
     setSample(null);
     setMapping(null);
     setResult(null);
+    setFileValidationMessage(null);
+    if (password) {
+      setPassword("");
+    }
+    setPasswordPrompt(null);
   }
 
   function updateMapping(field: MappingField, value: string) {
@@ -112,7 +162,7 @@ export function UploadFlow({ isSubscribed }: UploadFlowProps) {
 
   return (
     <div className="mx-auto max-w-5xl text-left">
-      {step === "idle" ? (
+      {step === "idle" && !passwordPrompt ? (
         <section
           className={`rounded-[24px] border-2 border-dashed bg-[#16181c] p-8 transition-colors sm:p-10 ${
             isDragging ? "border-[#0052ff] bg-[rgba(0,82,255,0.06)]" : "border-[#2a2d33]"
@@ -128,7 +178,7 @@ export function UploadFlow({ isSubscribed }: UploadFlowProps) {
             event.preventDefault();
             setIsDragging(false);
             const droppedFile = event.dataTransfer.files[0];
-            if (droppedFile) void upload(droppedFile);
+            if (droppedFile) selectFile(droppedFile);
           }}
         >
           <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-center">
@@ -136,9 +186,12 @@ export function UploadFlow({ isSubscribed }: UploadFlowProps) {
               <UploadIcon />
             </span>
             <div>
-              <h2 className="text-2xl font-semibold text-white">거래내역 CSV 업로드</h2>
+              <h2 className="text-2xl font-semibold text-white">
+                거래내역 CSV·카드 명세서 PDF 업로드
+              </h2>
               <p className="mt-3 text-sm leading-relaxed text-[#a8acb3]">
-                CSV 파일을 이곳에 끌어다 놓거나 파일을 선택하세요. 원본 파일은 저장하지 않아요.
+                거래내역 CSV나 카드사에서 받은 명세서 PDF를 올릴 수 있어요. 원본 파일은
+                저장하지 않아요.
               </p>
             </div>
           </div>
@@ -146,18 +199,20 @@ export function UploadFlow({ isSubscribed }: UploadFlowProps) {
           <label className="mt-8 inline-flex h-14 cursor-pointer items-center rounded-full bg-[#0052ff] px-8 font-semibold text-white hover:bg-[#003ecc]">
             파일 선택
             <input
-              accept=".csv,text/csv"
-              aria-label="CSV 파일 선택"
+              accept=".csv,text/csv,.pdf,application/pdf"
+              aria-label="CSV 또는 PDF 파일 선택"
               className="sr-only"
               disabled={isWorking}
               onChange={(event) => {
                 const selectedFile = event.target.files?.[0];
-                if (selectedFile) void upload(selectedFile);
+                if (selectedFile) selectFile(selectedFile);
               }}
               type="file"
             />
           </label>
-          {isWorking ? (
+          {fileValidationMessage ? (
+            <p className="mt-4 text-sm text-[#cf202f]">{fileValidationMessage}</p>
+          ) : isWorking ? (
             <p className="mt-4 animate-fade-in text-sm text-[#a8acb3]">파일을 확인하고 있어요...</p>
           ) : (
             <p className="mt-6 text-[13px] leading-relaxed text-[#6e7480]">
@@ -166,6 +221,18 @@ export function UploadFlow({ isSubscribed }: UploadFlowProps) {
           )}
         </section>
       ) : null}
+
+      <PasswordPrompt
+        isOpen={passwordPrompt !== null}
+        isWorking={isWorking}
+        onCancel={reset}
+        onSubmit={(submittedPassword) => {
+          if (!file) return;
+          setPassword(submittedPassword);
+          void upload(file, submittedPassword);
+        }}
+        reason={passwordPrompt?.reason ?? "missing"}
+      />
 
       {step === "confirming" && sample && mapping ? (
         <section className="rounded-[24px] bg-[#16181c] p-8" data-testid="mapping-card">
