@@ -1,0 +1,51 @@
+{
+  "project": "finsight",
+  "phase": "4-pdf-statement",
+  "steps": [
+    {
+      "step": 0,
+      "name": "pdfjs-dist 도입 + 합성 암호화 PDF 픽스처 + 좌표 텍스트 추출",
+      "status": "pending"
+    },
+    {
+      "step": 1,
+      "name": "fuzzy y 행 그룹핑 + 거래행 후보 필터 + right-edge 컬럼 클러스터 발견",
+      "status": "pending"
+    },
+    {
+      "step": 2,
+      "name": "레댁션 게이트 — LLM 전달 직전 PII 차단 (차단형)",
+      "status": "pending"
+    },
+    {
+      "step": 3,
+      "name": "LLM 컬럼 의미 판정 → PdfColumnSchema",
+      "status": "pending"
+    },
+    {
+      "step": 4,
+      "name": "스키마 적용 → ParsedCsv 어댑터 + 합계 일치 통합테스트",
+      "status": "pending"
+    },
+    {
+      "step": 5,
+      "name": "POST /api/upload — PDF 분기 (판별·password·409/422·CSV 무회귀)",
+      "status": "pending"
+    },
+    {
+      "step": 6,
+      "name": "POST /api/analyze — PDF 분기 (pdfColumnSchema 재수신, LLM 재판정 없음)",
+      "status": "pending"
+    },
+    {
+      "step": 7,
+      "name": "드롭존 PDF 허용 + 비밀번호 입력 모달 (원본 File 메모리 유지)",
+      "status": "pending"
+    },
+    {
+      "step": 8,
+      "name": "UploadFlow 상태 확장 + PDF 에러 문구 + '이번 달 청구액 기준' 안내",
+      "status": "pending"
+    }
+  ]
+}

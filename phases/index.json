@@ -20,6 +20,10 @@
       "dir": "3-frontend",
       "status": "completed",
       "completed_at": "2026-07-21T13:32:58+0900"
+    },
+    {
+      "dir": "4-pdf-statement",
+      "status": "pending"
     }
   ]
 }
