@@ -17,3 +17,46 @@ export type PdfPageText = {
 export type PdfExtractedDocument = {
   pages: PdfPageText[]
 }
+
+export type PdfLineRole =
+  | "transaction"
+  | "subtotal"
+  | "total"
+  | "tableHeader"
+  | "sectionHeader"
+  | "period"
+  | "other"
+
+export type PdfSectionKind = "domestic" | "foreign"
+
+export type PdfLine = {
+  pageNumber: number
+  /** Cluster mean y coordinate. */
+  y: number
+  /** Items sorted by ascending x coordinate. */
+  items: PdfTextItem[]
+  /** Concatenated text for line-role keyword checks, never column parsing. */
+  text: string
+  role: PdfLineRole
+  sectionId: string | null
+}
+
+export type PdfRightEdgeCluster = {
+  rightEdge: number
+  rowCount: number
+  sampleValues: string[]
+}
+
+export type PdfStatementLayout = {
+  lines: PdfLine[]
+  transactionLines: PdfLine[]
+  excludedLines: PdfLine[]
+  sections: {
+    sectionId: string
+    kind: PdfSectionKind
+    headerText: string
+  }[]
+  statementPeriod: { start: string; end: string } | null
+  numericColumns: PdfRightEdgeCluster[]
+  headerLabels: { text: string; rightEdge: number }[]
+}

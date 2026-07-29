@@ -13,7 +13,10 @@
     {
       "step": 1,
       "name": "fuzzy y 행 그룹핑 + 거래행 후보 필터 + right-edge 컬럼 클러스터 발견",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-07-29T17:32:27+0900",
+      "summary": "fuzzy y 행 그룹핑과 거래행 역할·섹션·이용기간 판정, 동적 right-edge 숫자 컬럼 발견을 골든 회귀 테스트와 함께 구현했다.",
+      "completed_at": "2026-07-29T17:37:02+0900"
     },
     {
       "step": 2,
