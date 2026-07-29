@@ -23,7 +23,8 @@
     },
     {
       "dir": "4-pdf-statement",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-07-29T18:09:31+0900"
     }
   ]
 }
