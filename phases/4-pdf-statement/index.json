@@ -7,7 +7,8 @@
       "name": "pdfjs-dist 도입 + 합성 암호화 PDF 픽스처 + 좌표 텍스트 추출",
       "status": "completed",
       "started_at": "2026-07-29T16:52:32+0900",
-      "summary": "pdfjs-dist 좌표 추출기와 암호화·연말경계·무거래 합성 PDF 픽스처 3종 및 골든 회귀 테스트를 추가했다."
+      "summary": "pdfjs-dist 좌표 추출기와 암호화·연말경계·무거래 합성 PDF 픽스처 3종 및 골든 회귀 테스트를 추가했다.",
+      "completed_at": "2026-07-29T16:58:49+0900"
     },
     {
       "step": 1,
