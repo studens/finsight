@@ -28,9 +28,24 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* 파일을 읽는 동안 도는 동전. 진행 중임을 알리는 기능성 표시라
+   ui-design의 "무한 반복 애니메이션 금지"에 대한 의도적 예외다.
+   글로우 없이 회전만 쓰고, 모션을 줄인 사용자에게는 아래에서 끈다. */
+@keyframes coin-flip {
+  from { transform: rotateY(0deg); }
+  to { transform: rotateY(360deg); }
+}
+
 @theme {
   --animate-fade-in: fade-in 0.4s ease-out;
   --animate-slide-up: slide-up 0.5s ease-out;
+  --animate-coin-flip: coin-flip 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-coin-flip {
+    animation: none;
+  }
 }
 
 body {

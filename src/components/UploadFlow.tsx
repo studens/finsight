@@ -4,6 +4,7 @@ import React, { useState } from "react";
 
 import { useApiError } from "../hooks/useApiError";
 import type { ColumnMapping, ConfirmedMapping, FreeSummary, RawRow } from "../types/pipeline";
+import { CoinSpinner } from "./CoinSpinner";
 import { ErrorModal } from "./ErrorModal";
 import { FreeSummaryCards } from "./FreeSummaryCards";
 import { PasswordPrompt } from "./PasswordPrompt";
@@ -244,7 +245,7 @@ export function UploadFlow({ isSubscribed }: UploadFlowProps) {
           {fileValidationMessage ? (
             <p className="mt-4 text-sm text-[#cf202f]">{fileValidationMessage}</p>
           ) : isWorking ? (
-            <p className="mt-4 animate-fade-in text-sm text-[#a8acb3]">파일을 확인하고 있어요...</p>
+            <CoinSpinner label="파일을 확인하고 있어요..." />
           ) : (
             <p className="mt-6 text-[13px] leading-relaxed text-[#6e7480]">
               파일이 없나요? 카드사·은행 앱 → 이용내역 → 내보내기(CSV)에서 받거나, 이메일로 온
