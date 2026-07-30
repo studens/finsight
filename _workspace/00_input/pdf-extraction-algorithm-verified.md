@@ -119,7 +119,7 @@ payload 구성: 전 페이지에서 fuzzy y 클러스터링 → 거래행(`^\d{2
 ```
 === 레댁션 게이트 검사 (LLM 전송 payload) ===
   ✅ 없음  실제 실명
-  ✅ 없음  주소 키워드 ([REDACTED_REAL_ADDRESS]|[REDACTED_REAL_ADDRESS]|[REDACTED_REAL_ADDRESS_DETAIL]|[REDACTED_REAL_ADDRESS_DETAIL])
+  ✅ 없음  주소 키워드 (시/군/구/동/로/호 조합)
   ✅ 없음  우편번호 5자리
   ✅ 없음  계좌형태 (\d{3}\*{4,}\d{2})
   ✅ 없음  카드번호 13~16자리
