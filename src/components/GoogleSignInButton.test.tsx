@@ -16,14 +16,14 @@ describe("GoogleSignInButton", () => {
     signInWithOAuth.mockReset();
   });
 
-  it("starts Google OAuth and redirects back to the dashboard", () => {
+  it("starts Google OAuth and returns through the session exchange callback", () => {
     render(<GoogleSignInButton />);
 
     fireEvent.click(screen.getByRole("button", { name: "Google로 계속하기" }));
 
     expect(signInWithOAuth).toHaveBeenCalledWith({
       provider: "google",
-      options: { redirectTo: "http://localhost:3000/dashboard" },
+      options: { redirectTo: "http://localhost:3000/auth/callback" },
     });
   });
 

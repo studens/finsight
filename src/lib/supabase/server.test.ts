@@ -145,6 +145,39 @@ describe("Supabase server reads", () => {
     await expect(getPreviousAnalysis("user-1", row.created_at)).resolves.toBeNull()
   })
 
+  it("retries once when Supabase rejects a freshly issued JWT as future-dated", async () => {
+    vi.useFakeTimers()
+    try {
+      const skewed = query({
+        data: null,
+        error: { code: "PGRST303", message: "JWT issued at future" },
+      })
+      const retried = query({ data: { status: "active" }, error: null })
+      createServerClient
+        .mockReturnValueOnce({ from: vi.fn(() => skewed) })
+        .mockReturnValueOnce({ from: vi.fn(() => retried) })
+
+      const pending = getSubscriptionStatus("user-1")
+      await vi.advanceTimersByTimeAsync(1_000)
+
+      await expect(pending).resolves.toBe("active")
+      expect(createServerClient).toHaveBeenCalledTimes(2)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it("does not retry errors unrelated to clock skew", async () => {
+    const failing = query({
+      data: null,
+      error: { code: "42P01", message: 'relation "analyses" does not exist' },
+    })
+    createServerClient.mockReturnValue({ from: vi.fn(() => failing) })
+
+    await expect(getAnalysisById("analysis-1")).rejects.toMatchObject({ code: "42P01" })
+    expect(createServerClient).toHaveBeenCalledTimes(1)
+  })
+
   it("lists only the compact analysis history in descending creation order", async () => {
     const rows = [
       { id: "new", created_at: "2026-07-20T00:00:00Z", free_summary: { totalSpent: 2 } },

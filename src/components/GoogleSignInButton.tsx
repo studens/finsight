@@ -12,7 +12,9 @@ export function GoogleSignInButton() {
     void supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/dashboard`,
+        // PKCE 코드를 세션으로 교환하는 서버 라우트를 거쳐야 한다.
+        // 대시보드로 바로 돌아오면 코드가 교환되지 않아 미들웨어가 다시 /login으로 보낸다.
+        redirectTo: `${window.location.origin}/auth/callback`,
       },
     });
   };
