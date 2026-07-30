@@ -6,8 +6,11 @@ src/
 ├── app/
 │   ├── (marketing)/          # 랜딩 페이지 ("/")
 │   ├── login/                # Google OAuth 진입
-│   ├── (app)/dashboard/      # 로그인 필요 대시보드 (업로드 + Free/Premium 섹션)
+│   ├── (app)/
+│   │   ├── layout.tsx        # 공용 헤더 — 브랜드 + 로그아웃
+│   │   └── dashboard/        # 로그인 필요 대시보드 (업로드 + Free/Premium 섹션)
 │   └── api/
+│       ├── auth/signout/                        # POST — 세션 종료 후 /login으로 303
 │       ├── upload/                              # POST — CSV 파싱 + PII 마스킹 + 컬럼 매핑 추론
 │       ├── analyze/                             # POST — 매핑 확인 후 Free 요약 생성/저장 (동기)
 │       ├── reports/[analysisId]/[reportType]/    # GET — Premium 리포트 지연 생성/조회
