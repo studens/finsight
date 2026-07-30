@@ -7,7 +7,8 @@
       "name": "signOut 서버 래퍼 + POST /api/auth/signout 라우트",
       "status": "completed",
       "summary": "쿠키 기반 signOut 래퍼와 동일 출처 검증·303 리다이렉트를 적용한 POST 로그아웃 라우트 및 테스트를 추가했다.",
-      "started_at": "2026-07-30T16:30:14+0900"
+      "started_at": "2026-07-30T16:30:14+0900",
+      "completed_at": "2026-07-30T16:32:47+0900"
     },
     {
       "step": 1,
