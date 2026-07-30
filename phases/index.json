@@ -28,7 +28,8 @@
     },
     {
       "dir": "5-logout",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-07-30T16:36:42+0900"
     }
   ]
 }
