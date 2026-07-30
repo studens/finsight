@@ -34,6 +34,44 @@ describe("inferPdfColumnSchema", () => {
     generateAnalysisText.mockReset()
   })
 
+  it("treats a column with no headerLabel as null", async () => {
+    // 실측: 프롬프트가 headerLabel을 요구하지 않아 모델이 이 키를 자주 생략한다.
+    // 생략을 거부하면 PDF 파이프라인 전체가 column_schema_invalid로 죽는다.
+    generateAnalysisText.mockResolvedValue({
+      text: JSON.stringify({
+        issuer: "unknown",
+        columns: [
+          { rightEdge: 100, role: "usageAmount" },
+          { rightEdge: 200, role: "billedAmount" },
+        ],
+        billedAmountRightEdge: 200,
+        confidence: 0.96,
+      }),
+    })
+    const { inferPdfColumnSchema } = await import("./pdf-column-schema")
+
+    await expect(inferPdfColumnSchema(request)).resolves.toMatchObject({
+      columns: [
+        { rightEdge: 100, role: "usageAmount", headerLabel: null },
+        { rightEdge: 200, role: "billedAmount", headerLabel: null },
+      ],
+    })
+  })
+
+  it("still rejects a headerLabel of the wrong type", async () => {
+    generateAnalysisText.mockResolvedValue({
+      text: JSON.stringify({
+        issuer: null,
+        columns: [{ rightEdge: 100, role: "usageAmount", headerLabel: 42 }],
+        billedAmountRightEdge: 100,
+        confidence: 0.9,
+      }),
+    })
+    const { inferPdfColumnSchema } = await import("./pdf-column-schema")
+
+    await expect(inferPdfColumnSchema(request)).rejects.toBeInstanceOf(TypeError)
+  })
+
   it("parses and validates the mocked LLM JSON while adding code-owned fields", async () => {
     generateAnalysisText.mockResolvedValue({
       text: JSON.stringify({
