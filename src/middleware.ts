@@ -15,7 +15,9 @@ export async function middleware(request: NextRequest) {
     return redirectWithSessionCookies(new URL("/login", request.url), response)
   }
 
-  if (user && pathname === "/") {
+  // 로그인된 사용자에게 랜딩·로그인 화면을 보여줄 이유가 없다.
+  // `/auth/callback`은 제외한다 — 세션이 이미 있어도 PKCE 코드 교환은 실행돼야 한다.
+  if (user && (pathname === "/" || pathname === "/login")) {
     return redirectWithSessionCookies(new URL("/dashboard", request.url), response)
   }
 
