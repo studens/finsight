@@ -65,6 +65,13 @@ export async function getSessionUser(): Promise<User | null> {
   return user
 }
 
+export async function signOut(): Promise<void> {
+  const supabase = await createClient()
+  const { error } = await supabase.auth.signOut()
+
+  if (error) throw error
+}
+
 export async function getAnalysisById(analysisId: string): Promise<{
   id: string
   user_id: string

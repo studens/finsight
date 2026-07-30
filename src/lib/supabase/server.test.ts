@@ -18,6 +18,7 @@ import {
   getSessionUser,
   getSubscriptionStatus,
   listUserAnalyses,
+  signOut,
 } from "./server"
 
 function query(result: { data: unknown; error: unknown }) {
@@ -72,6 +73,19 @@ describe("Supabase server reads", () => {
 
     await expect(getSessionUser()).resolves.toEqual({ id: "user-1" })
     await expect(getSessionUser()).resolves.toBeNull()
+  })
+
+  it("signs out through the session client and propagates auth errors", async () => {
+    const authError = new Error("sign out failed")
+    const authSignOut = vi
+      .fn()
+      .mockResolvedValueOnce({ error: null })
+      .mockResolvedValueOnce({ error: authError })
+    createServerClient.mockReturnValue({ auth: { signOut: authSignOut } })
+
+    await expect(signOut()).resolves.toBeUndefined()
+    await expect(signOut()).rejects.toBe(authError)
+    expect(authSignOut).toHaveBeenCalledTimes(2)
   })
 
   it("returns an analysis unchanged and null when RLS makes it invisible", async () => {
