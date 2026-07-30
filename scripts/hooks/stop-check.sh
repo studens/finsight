@@ -15,7 +15,10 @@ if [ ! -f "$ROOT/package.json" ]; then
   exit 0
 fi
 
-OUTPUT=$( { npm run lint && npm run build && npm run test; } 2>&1 )
+# 검증 빌드는 .next-check로 출력한다(next.config.ts의 NEXT_DIST_DIR).
+# 실행 중인 dev 서버가 .next를 쓰고 있으므로 같은 디렉터리에 빌드하면
+# 양쪽 산출물이 섞여 "Cannot find module for page: /_document" 등으로 깨진다.
+OUTPUT=$( { npm run lint && NEXT_DIST_DIR=.next-check npm run build && npm run test; } 2>&1 )
 STATUS=$?
 
 if [ "$STATUS" -ne 0 ]; then

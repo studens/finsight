@@ -14,6 +14,8 @@ export default [
     // public/deck/**은 벤더 데모 자산, scripts/**는 TDD 대상이 아닌 도구 스크립트다.
     ignores: [
       ".next/**",
+      // stop-check.sh의 검증 빌드 출력(next.config.ts의 NEXT_DIST_DIR)
+      ".next-check/**",
       "node_modules/**",
       "coverage/**",
       ".claude/**",
