@@ -9,11 +9,11 @@ describe("MarketingPage", () => {
     const { container } = render(<MarketingPage />);
 
     expect(screen.getByRole("heading", { level: 1 })).toBeInTheDocument();
-    expect(screen.getByText("CSV 업로드")).toBeInTheDocument();
+    expect(screen.getByText("파일 업로드")).toBeInTheDocument();
     expect(screen.getByText("컬럼 자동 매핑 확인")).toBeInTheDocument();
     expect(screen.getByText("인사이트 확인")).toBeInTheDocument();
     expect(container.querySelector(".grid-cols-3")).toBeInTheDocument();
-    expect(screen.getByText(/원본 CSV는 저장하지 않아요/)).toBeInTheDocument();
+    expect(screen.getByText(/원본 파일은 저장하지 않아요/)).toBeInTheDocument();
 
     const ctas = screen.getAllByRole("link", { name: "무료로 시작하기" });
     expect(ctas).toHaveLength(2);

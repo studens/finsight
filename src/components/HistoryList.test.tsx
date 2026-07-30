@@ -9,7 +9,7 @@ describe("HistoryList", () => {
     render(<HistoryList analyses={[]} />);
 
     expect(
-      screen.getByText("아직 업로드한 내역이 없어요 — CSV를 올려 시작해 보세요"),
+      screen.getByText("아직 업로드한 내역이 없어요 — CSV나 PDF를 올려 시작해 보세요"),
     ).toBeInTheDocument();
   });
 

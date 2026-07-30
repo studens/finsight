@@ -29,7 +29,7 @@ export function HistoryList({ analyses }: HistoryListProps) {
 
       {analyses.length === 0 ? (
         <p className="mt-5 rounded-2xl bg-[#0a0b0d] p-5 text-sm text-[#a8acb3]">
-          아직 업로드한 내역이 없어요 — CSV를 올려 시작해 보세요
+          아직 업로드한 내역이 없어요 — CSV나 PDF를 올려 시작해 보세요
         </p>
       ) : (
         <ul className="mt-5 space-y-3">

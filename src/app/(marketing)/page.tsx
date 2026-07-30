@@ -16,8 +16,9 @@ const cardHoverClassesLight =
 const steps = [
   {
     icon: UploadIcon,
-    title: "CSV 업로드",
-    description: "카드사나 은행에서 받은 거래내역 CSV를 그대로 올리세요.",
+    title: "파일 업로드",
+    description:
+      "카드사나 은행에서 받은 거래내역 CSV나 명세서 PDF를 그대로 올리세요.",
   },
   {
     icon: ChecklistIcon,
@@ -52,7 +53,7 @@ export default function MarketingPage() {
         <div className="mx-auto max-w-5xl">
           <span className="inline-flex items-center gap-2 rounded-full bg-[#16181c] px-4 py-2 text-[13px] font-medium text-[#a8acb3]">
             <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-[#05b169]" />
-            원본 CSV 미저장 · 뒤 4자리만
+            원본 파일 미저장 · 뒤 4자리만
           </span>
           <h1 className="mt-6 break-keep text-4xl font-normal leading-[1.05] tracking-[-0.03em] text-white sm:text-6xl sm:leading-[1.02]">
             거래내역을 올리면,
@@ -60,8 +61,8 @@ export default function MarketingPage() {
             새는 돈이 보여요.
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-[#a8acb3]">
-            카드·은행 CSV 하나로 지출 흐름을 정리하고, 놓치기 쉬운 금융
-            인사이트를 확인하세요.
+            카드·은행 거래내역 CSV나 명세서 PDF 하나로 지출 흐름을 정리하고,
+            놓치기 쉬운 금융 인사이트를 확인하세요.
           </p>
           <div className="mt-8 flex flex-col items-center gap-4">
             <Link className={primaryLinkClasses} href="/login">
@@ -122,7 +123,7 @@ export default function MarketingPage() {
               같은 명세서에서 AI가 무엇을 찾아내는지 보여줍니다
             </h2>
             <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-[#a8acb3]">
-              원본 CSV는 그대로, 마스킹된 거래 단위만 AI에게 전달해 구독 누수·이상
+              원본 파일은 그대로, 마스킹된 거래 단위만 AI에게 전달해 구독 누수·이상
               거래·카테고리 비중을 정리합니다.
             </p>
           </div>
@@ -184,7 +185,7 @@ export default function MarketingPage() {
                   금융 데이터는 필요한 만큼만 다뤄요
                 </h2>
                 <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[#a8acb3]">
-                  원본 CSV는 저장하지 않아요 — 분석에 필요한 마스킹된 요약만
+                  원본 파일은 저장하지 않아요 — 분석에 필요한 마스킹된 요약만
                   남겨요. 카드/계좌번호는 뒤 4자리만, 이름·전화번호는 아예
                   전송하지 않아요.
                 </p>
@@ -201,7 +202,7 @@ export default function MarketingPage() {
             내 지출을 더 선명하게 보세요.
           </h2>
           <p className="mt-4 text-sm leading-relaxed text-[#5b616e]">
-            CSV를 준비했다면 바로 시작할 수 있어요.
+            거래내역 CSV나 명세서 PDF를 준비했다면 바로 시작할 수 있어요.
           </p>
           <Link className={`${primaryLinkClasses} mt-8`} href="/login">
             무료로 시작하기

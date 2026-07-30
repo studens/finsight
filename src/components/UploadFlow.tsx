@@ -247,7 +247,8 @@ export function UploadFlow({ isSubscribed }: UploadFlowProps) {
             <p className="mt-4 animate-fade-in text-sm text-[#a8acb3]">파일을 확인하고 있어요...</p>
           ) : (
             <p className="mt-6 text-[13px] leading-relaxed text-[#6e7480]">
-              CSV가 없나요? 카드사·은행 앱 → 이용내역 → 내보내기(CSV)에서 받을 수 있어요.
+              파일이 없나요? 카드사·은행 앱 → 이용내역 → 내보내기(CSV)에서 받거나, 이메일로 온
+              월별 명세서 PDF를 그대로 올려도 돼요.
             </p>
           )}
         </section>
