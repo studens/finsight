@@ -107,7 +107,8 @@ describe("findPiiPatterns", () => {
   })
 
   it("flags an address only with an administrative division token", () => {
-    expect(findPiiPatterns("주소[REDACTED_POSTCODE] [REDACTED_REAL_ADDRESS]")).toContain(
+    // 가명 주소 — 실제 명세서의 `경기도 ○○시 ...` 형태(도/시 토큰)를 재현한다.
+    expect(findPiiPatterns("주소11111 경기도 예시시 예시대로 177")).toContain(
       "postal_address",
     )
     expect(findPiiPatterns("06/18CU 12345 동일로점2,5000")).not.toContain(
