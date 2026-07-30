@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 
 import { Button } from "./ui/button";
 
@@ -21,9 +21,21 @@ export function PasswordPrompt({
 }: PasswordPromptProps) {
   const [input, setInput] = useState("");
 
-  useEffect(() => {
+  // 입력값을 비우는 두 경로. effect를 쓰지 않는 이유:
+  //  (1) effect는 렌더 후에 실행되므로 틀린 비밀번호가 한 커밋 동안 DOM에 남는다
+  //      (테스트가 간헐적으로 실패하는 원인이었다).
+  //  (2) 의존성이 `reason` 값이면 연속 오답("incorrect" → "incorrect")처럼
+  //      값이 그대로인 경우 초기화가 아예 실행되지 않는다.
+  //
+  // 경로 A: 제출 즉시 비운다 — 연속 오답과 경쟁을 함께 해소한다(onSubmit 핸들러).
+  // 경로 B: 프롬프트 정체성(reason/isOpen)이 바뀌면 렌더 중에 비운다 — 제출 없이
+  //         입력만 하고 취소한 뒤 다른 파일로 다시 열었을 때 이전 값이 남지 않게 한다.
+  const identity = `${reason}:${isOpen}`;
+  const [prevIdentity, setPrevIdentity] = useState(identity);
+  if (prevIdentity !== identity) {
+    setPrevIdentity(identity);
     setInput("");
-  }, [reason]);
+  }
 
   if (!isOpen) {
     return null;
@@ -55,7 +67,9 @@ export function PasswordPrompt({
           onSubmit={(event) => {
             event.preventDefault();
             if (input !== "") {
-              onSubmit(input);
+              const submitted = input;
+              setInput("");
+              onSubmit(submitted);
             }
           }}
         >

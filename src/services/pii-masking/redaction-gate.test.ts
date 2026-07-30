@@ -70,8 +70,49 @@ describe("findPiiPatterns", () => {
     "[해외이용]",
     "53(할인)",
     "922(면제)",
+    // 오탐 금지 — 괄호 안 한글은 대부분 지점명/혜택명이다. allowlist 열거로는
+    // 결코 완성될 수 없고, 하나라도 걸리면 정상 명세서 업로드 전체가 422로 막힌다.
+    "06/13스타벅스(강남점)5,5000",
+    "06/14올리브영(신촌점)12,3000",
+    "06/15쿠팡(즉시할인)9,9000",
+    "06/16카카오T(택시)7,2000",
+    "06/17GS25(역삼1호점)3,1000",
+    // 표 헤더의 '합계'는 소계/합계 행이 아니다(합성어의 일부).
+    "이용금액합계",
+    "청구금액합계",
+    // 지점명에 든 '로'/'동'은 주소가 아니다. 앞의 5자리는 가맹점 코드일 수 있다.
+    "06/18CU 12345 동일로점2,5000",
+    "06/19테스트마트 12345 신사동점8,8000",
   ])("does not flag a safe statement value: %s", (value) => {
     expect(findPiiPatterns(value)).toEqual([])
+  })
+
+  it.each([
+    // 실제 명세서의 소계/합계 행은 소계/합계로 시작한다.
+    "소계(M614)(홍길동)바른카드866,64690277,200",
+    "합계882,64690277,200",
+    "합계 소계 합계",
+  ])("still flags a real subtotal or total line: %s", (value) => {
+    expect(findPiiPatterns(value)).toContain("subtotal_context")
+  })
+
+  it("flags a Korean personal name only in a name-bearing context", () => {
+    // 소계 행의 괄호 한글은 실명이다 → 차단
+    expect(findPiiPatterns("소계(M614)(홍길동)바른카드")).toContain(
+      "korean_name",
+    )
+    expect(findPiiPatterns("예금주(홍길동)")).toContain("korean_name")
+    // 가맹점명의 괄호 한글은 지점명이다 → 통과
+    expect(findPiiPatterns("스타벅스(강남점)")).not.toContain("korean_name")
+  })
+
+  it("flags an address only with an administrative division token", () => {
+    expect(findPiiPatterns("주소[REDACTED_POSTCODE] [REDACTED_REAL_ADDRESS]")).toContain(
+      "postal_address",
+    )
+    expect(findPiiPatterns("06/18CU 12345 동일로점2,5000")).not.toContain(
+      "postal_address",
+    )
   })
 
   it("deduplicates repeated findings", () => {

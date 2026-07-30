@@ -53,6 +53,59 @@ describe("PasswordPrompt", () => {
     expect(screen.queryByText("wrong-secret")).not.toBeInTheDocument();
   });
 
+  it("clears the field on consecutive incorrect attempts, when reason never changes", () => {
+    const onSubmit = vi.fn();
+    const props = {
+      isOpen: true,
+      isWorking: false,
+      onCancel: vi.fn(),
+      onSubmit,
+      reason: "incorrect" as const,
+    };
+    const { container, rerender } = render(<PasswordPrompt {...props} />);
+
+    // 1차 오답
+    fireEvent.change(screen.getByLabelText("명세서 비밀번호"), {
+      target: { value: "wrong-1" },
+    });
+    fireEvent.submit(container.querySelector("form")!);
+    expect(onSubmit).toHaveBeenLastCalledWith("wrong-1");
+    expect(screen.getByLabelText("명세서 비밀번호")).toHaveValue("");
+
+    // 서버가 또 incorrect를 돌려주므로 reason이 변하지 않는다.
+    // 값 변화에 의존해 초기화하면 이 경로에서 틀린 비밀번호가 화면에 남는다.
+    rerender(<PasswordPrompt {...props} />);
+    fireEvent.change(screen.getByLabelText("명세서 비밀번호"), {
+      target: { value: "wrong-2" },
+    });
+    fireEvent.submit(container.querySelector("form")!);
+
+    expect(onSubmit).toHaveBeenLastCalledWith("wrong-2");
+    expect(screen.getByLabelText("명세서 비밀번호")).toHaveValue("");
+    expect(screen.queryByText("wrong-2")).not.toBeInTheDocument();
+  });
+
+  it("does not carry a typed password into the next prompt after cancelling", () => {
+    const props = {
+      isWorking: false,
+      onCancel: vi.fn(),
+      onSubmit: vi.fn(),
+      reason: "missing" as const,
+    };
+    const { rerender } = render(<PasswordPrompt {...props} isOpen />);
+
+    // 제출하지 않고 입력만 한 뒤 닫는다("다시 올리기").
+    fireEvent.change(screen.getByLabelText("명세서 비밀번호"), {
+      target: { value: "pw-for-file-a" },
+    });
+    rerender(<PasswordPrompt {...props} isOpen={false} />);
+
+    // 다른 파일로 다시 열면 빈 상태여야 한다.
+    rerender(<PasswordPrompt {...props} isOpen />);
+    expect(screen.getByLabelText("명세서 비밀번호")).toHaveValue("");
+    expect(screen.queryByText("pw-for-file-a")).not.toBeInTheDocument();
+  });
+
   it("uses the prescribed dark modal tokens without blur effects", () => {
     render(
       <PasswordPrompt

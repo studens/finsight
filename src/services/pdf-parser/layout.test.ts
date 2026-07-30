@@ -88,12 +88,14 @@ describe("buildStatementLayout", () => {
     expect(billedColumn).toBeDefined()
     expect(sumSamplesFromColumn(fuzzyLayout, billedColumn!)).toBe(882_646)
 
+    // 회귀의 실제 형태는 "거래행이 줄어드는 것"이 아니라 "행 수는 그대로인데
+    // 한 시각적 행이 두 y로 갈라져 금액이 새는 것"이다. 그래서 행 수는 단정하지
+    // 않고 청구금액 합계만 단정한다 — 이게 에러 없이 조용히 틀리는 실패를 잡는 신호다.
     const exactLayout = buildStatementLayout(doc, { yTolerance: 0 })
     const exactBilledColumn = exactLayout.numericColumns.find(
       (column) => Math.abs(column.rightEdge - 407) <= RIGHT_EDGE_TOLERANCE,
     )
 
-    expect(exactLayout.transactionLines.length).toBeLessThan(35)
     expect(
       exactBilledColumn
         ? sumSamplesFromColumn(exactLayout, exactBilledColumn)

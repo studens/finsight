@@ -7,6 +7,7 @@ import { parseCsv } from "../../../services/csv-parser"
 import { generateFreeSummary } from "../../../services/llm/free-summary"
 import {
   isPdfBuffer,
+  parsePdfColumnSchema,
   parsePdfStatementWithSchema,
 } from "../../../services/pdf-parser"
 import { maskPii } from "../../../services/pii-masking"
@@ -48,17 +49,22 @@ function parseMapping(value: FormDataEntryValue | null): ConfirmedMapping | null
   }
 }
 
-function parsePdfColumnSchema(
+/**
+ * 신뢰 경계: `pdfColumnSchema`는 클라이언트가 보낸 값이므로 **절대 캐스트하지 않는다.**
+ * core-services의 화이트리스트 검증기(`parsePdfColumnSchema`)를 반드시 통과시킨다 —
+ * 검증 없이 통과시키면 조작된 `rightEdgeTolerance`/`billedAmountRightEdge`로
+ * 사용자가 확인한 금액과 다른 값이 저장될 수 있다(INV-2가 막으려는 실패).
+ *
+ * 누락과 불량(조작 포함)을 모두 `null`로 합쳐 같은 400 응답을 쓴다 —
+ * 어느 쪽이든 클라이언트가 스키마를 잃었다는 뜻이고 사용자 대응(재업로드)이 동일하다.
+ */
+function readPdfColumnSchema(
   value: FormDataEntryValue | null,
 ): PdfColumnSchema | null {
   if (typeof value !== "string" || value.trim().length === 0) return null
 
   try {
-    const schema: unknown = JSON.parse(value)
-    if (!schema || typeof schema !== "object" || Array.isArray(schema)) {
-      return null
-    }
-    return schema as PdfColumnSchema
+    return parsePdfColumnSchema(JSON.parse(value) as unknown)
   } catch {
     return null
   }
@@ -114,7 +120,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   let parsed
   if (isPdf) {
-    const schema = parsePdfColumnSchema(formData.get("pdfColumnSchema"))
+    const schema = readPdfColumnSchema(formData.get("pdfColumnSchema"))
     if (!schema) {
       return NextResponse.json(
         { code: "BAD_REQUEST", reason: "pdf_schema_missing" },

@@ -198,18 +198,6 @@ export function buildStatementLayout(
       options?.yTolerance ?? Y_CLUSTER_TOLERANCE,
     ),
   )
-  if (options?.yTolerance === 0) {
-    for (const line of lines) {
-      if (
-        line.role === "transaction" &&
-        !line.items.some((item) =>
-          NUMERIC_ITEM_PATTERN.test(item.text.trim()),
-        )
-      ) {
-        line.role = "other"
-      }
-    }
-  }
   const sections = assignSections(lines)
   const transactionLines = lines.filter(
     (line) => line.role === "transaction",
