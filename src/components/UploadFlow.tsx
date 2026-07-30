@@ -269,6 +269,9 @@ export function UploadFlow({ isSubscribed }: UploadFlowProps) {
           }
         }}
         reason={passwordPrompt?.reason ?? "missing"}
+        workingLabel={
+          pendingStage === "analyze" ? "파일을 분석하고 있어요..." : "파일을 확인하고 있어요..."
+        }
       />
 
       {step === "confirming" && sample && mapping ? (
@@ -328,6 +331,7 @@ export function UploadFlow({ isSubscribed }: UploadFlowProps) {
             </Button>
             <Button disabled={isWorking} onClick={reset} type="button" variant="secondary">다시 올리기</Button>
           </div>
+          {isWorking ? <CoinSpinner label="파일을 분석하고 있어요..." /> : null}
         </section>
       ) : null}
 

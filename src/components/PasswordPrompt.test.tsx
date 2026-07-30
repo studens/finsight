@@ -106,6 +106,37 @@ describe("PasswordPrompt", () => {
     expect(screen.queryByText("pw-for-file-a")).not.toBeInTheDocument();
   });
 
+  it("shows a coin loader with the given label while working", () => {
+    render(
+      <PasswordPrompt
+        isOpen
+        isWorking
+        onCancel={vi.fn()}
+        onSubmit={vi.fn()}
+        reason="missing"
+        workingLabel="파일을 분석하고 있어요..."
+      />,
+    );
+
+    expect(screen.getByRole("status")).toHaveTextContent("파일을 분석하고 있어요...");
+    expect(document.querySelector(".animate-coin-flip")).toBeInTheDocument();
+  });
+
+  it("hides the loader when not working", () => {
+    render(
+      <PasswordPrompt
+        isOpen
+        isWorking={false}
+        onCancel={vi.fn()}
+        onSubmit={vi.fn()}
+        reason="missing"
+        workingLabel="파일을 분석하고 있어요..."
+      />,
+    );
+
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
   it("uses the prescribed dark modal tokens without blur effects", () => {
     render(
       <PasswordPrompt

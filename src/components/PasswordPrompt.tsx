@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 
+import { CoinSpinner } from "./CoinSpinner";
 import { Button } from "./ui/button";
 
 export interface PasswordPromptProps {
@@ -10,6 +11,8 @@ export interface PasswordPromptProps {
   isWorking: boolean;
   onSubmit: (password: string) => void;
   onCancel: () => void;
+  /** 비밀번호 제출 후 처리하는 동안 보여줄 문구. 단계에 따라 달라진다. */
+  workingLabel?: string;
 }
 
 export function PasswordPrompt({
@@ -18,6 +21,7 @@ export function PasswordPrompt({
   isWorking,
   onSubmit,
   onCancel,
+  workingLabel = "파일을 확인하고 있어요...",
 }: PasswordPromptProps) {
   const [input, setInput] = useState("");
 
@@ -90,6 +94,7 @@ export function PasswordPrompt({
               다시 올리기
             </Button>
           </div>
+          {isWorking ? <CoinSpinner label={workingLabel} /> : null}
         </form>
       </section>
     </div>

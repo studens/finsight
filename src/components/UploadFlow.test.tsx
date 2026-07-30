@@ -522,4 +522,41 @@ describe("UploadFlow", () => {
     expect(await screen.findByText("CSV 또는 PDF 파일만 올릴 수 있어요.")).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
   });
+
+  it("shows the coin loader while analyzing a password-protected PDF", async () => {
+    let resolveAnalyze: (value: Response) => void = () => {};
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        jsonResponse({ code: "PDF_PASSWORD_REQUIRED", reason: "missing" }, 409),
+      )
+      .mockResolvedValueOnce(jsonResponse({ mapping, sample, pdfColumnSchema }))
+      .mockImplementationOnce(
+        () =>
+          new Promise<Response>((resolve) => {
+            resolveAnalyze = resolve;
+          }),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+    render(<UploadFlow isSubscribed={false} />);
+    const file = new File(["%PDF-"], "statement.pdf", { type: "application/pdf" });
+
+    fireEvent.change(screen.getByLabelText("CSV 또는 PDF 파일 선택"), {
+      target: { files: [file] },
+    });
+    await screen.findByRole("dialog");
+    fireEvent.change(screen.getByLabelText("명세서 비밀번호"), {
+      target: { value: "000000" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "비밀번호 확인" }));
+    await screen.findByRole("heading", { name: "컬럼 매핑 확인" });
+
+    fireEvent.click(screen.getByRole("button", { name: "분석 시작" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent("파일을 분석하고 있어요...");
+    expect(document.querySelector(".animate-coin-flip")).toBeInTheDocument();
+
+    resolveAnalyze(jsonResponse({ analysisId: "analysis-uuid", freeSummary }));
+    await waitFor(() => expect(screen.queryByRole("status")).not.toBeInTheDocument());
+  });
 });
