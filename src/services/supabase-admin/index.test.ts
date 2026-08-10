@@ -30,18 +30,6 @@ function insertQuery(result: { data: unknown; error: unknown }) {
   return { insert, select, single }
 }
 
-function reportQuery(options: {
-  owner: { user_id: string; premium_reports: Record<string, unknown> | null } | null
-  updateError?: unknown
-}) {
-  const ownerSingle = vi.fn(async () => ({ data: options.owner, error: null }))
-  const eqOwner = vi.fn(() => ({ single: ownerSingle }))
-  const select = vi.fn(() => ({ eq: eqOwner }))
-  const eqUpdate = vi.fn(async () => ({ error: options.updateError ?? null }))
-  const update = vi.fn(() => ({ eq: eqUpdate }))
-  return { select, eqOwner, ownerSingle, update, eqUpdate }
-}
-
 function subscriptionQuery(result: { error: unknown } = { error: null }) {
   const upsert = vi.fn(
     async (
@@ -81,38 +69,15 @@ describe("supabase-admin writes", () => {
     expect(query.select).toHaveBeenCalledWith("id")
   })
 
-  it.each([
-    ["another owner", { user_id: "user-2", premium_reports: null }],
-    ["a missing analysis", null],
-  ])("rejects %s before calling the service-role update", async (_label, owner) => {
-    const query = reportQuery({ owner })
-    createServiceClient.mockReturnValue({ from: vi.fn(() => query) })
-
-    await expect(
-      upsertPremiumReport({
-        userId: "user-1",
-        analysisId: "analysis-1",
-        reportType: "anomaly_detection",
-        report: { type: "anomaly_detection", summary: "none", anomalies: [] },
-      }),
-    ).rejects.toThrow("Analysis not found")
-
-    expect(query.update).not.toHaveBeenCalled()
-  })
-
-  it("preserves cached reports while merging the requested report key", async () => {
-    const cached = {
-      mom_comparison: { type: "mom_comparison", commentary: "cached" },
-    }
+  it("merges a premium report through the ownership-scoped RPC without querying a table", async () => {
     const report: PremiumReport = {
       type: "anomaly_detection",
       summary: "one unusual payment",
       anomalies: [{ transactionIndex: 0, reason: "large", severity: "high" }],
     }
-    const query = reportQuery({
-      owner: { user_id: "user-1", premium_reports: cached },
-    })
-    createServiceClient.mockReturnValue({ from: vi.fn(() => query) })
+    const rpc = vi.fn(async () => ({ data: true, error: null }))
+    const from = vi.fn()
+    createServiceClient.mockReturnValue({ rpc, from })
 
     await expect(
       upsertPremiumReport({
@@ -123,10 +88,43 @@ describe("supabase-admin writes", () => {
       }),
     ).resolves.toBeUndefined()
 
-    expect(query.update).toHaveBeenCalledWith({
-      premium_reports: { ...cached, anomaly_detection: report },
+    expect(rpc).toHaveBeenCalledTimes(1)
+    expect(rpc).toHaveBeenCalledWith("merge_premium_report", {
+      p_analysis_id: "analysis-1",
+      p_user_id: "user-1",
+      p_report_type: "anomaly_detection",
+      p_report: report,
     })
-    expect(query.eqUpdate).toHaveBeenCalledWith("id", "analysis-1")
+    expect(from).not.toHaveBeenCalled()
+  })
+
+  it("rejects an analysis that is missing or belongs to another user", async () => {
+    const rpc = vi.fn(async () => ({ data: null, error: null }))
+    createServiceClient.mockReturnValue({ rpc, from: vi.fn() })
+
+    await expect(
+      upsertPremiumReport({
+        userId: "user-1",
+        analysisId: "analysis-1",
+        reportType: "anomaly_detection",
+        report: { type: "anomaly_detection", summary: "none", anomalies: [] },
+      }),
+    ).rejects.toThrow("Analysis not found")
+  })
+
+  it("preserves the original database error from the report merge RPC", async () => {
+    const error = { name: "PostgrestError", code: "PGRST202" }
+    const rpc = vi.fn(async () => ({ data: null, error }))
+    createServiceClient.mockReturnValue({ rpc, from: vi.fn() })
+
+    await expect(
+      upsertPremiumReport({
+        userId: "user-1",
+        analysisId: "analysis-1",
+        reportType: "anomaly_detection",
+        report: { type: "anomaly_detection", summary: "none", anomalies: [] },
+      }),
+    ).rejects.toBe(error)
   })
 
   it("upserts a subscription status with an explicit updated timestamp", async () => {

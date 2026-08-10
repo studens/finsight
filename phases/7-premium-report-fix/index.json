@@ -13,7 +13,10 @@
     {
       "step": 1,
       "name": "upsertPremiumReport를 RPC 호출로 교체 — 읽고-쓰기 제거",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-08-10T17:26:02+0900",
+      "summary": "upsertPremiumReport의 select→JS 병합→update 경로를 소유권 스코프 merge_premium_report RPC 단일 호출로 교체하고 원본 DB 오류 전파 및 from 미호출 회귀 테스트를 추가했다.",
+      "completed_at": "2026-08-10T17:27:45+0900"
     },
     {
       "step": 2,
