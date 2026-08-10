@@ -72,7 +72,7 @@ afterEach(() => {
 });
 
 describe("PremiumSection", () => {
-  it("renders four static locked CTA cards without fetching or blurred data", () => {
+  it("renders four static locked CTA cards without premium data", () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
@@ -85,11 +85,118 @@ describe("PremiumSection", () => {
       "text-[#a8acb3]",
     );
 
-    fireEvent.click(screen.getAllByRole("button", { name: "Premium으로 보기" })[0]);
-
     expect(fetchMock).not.toHaveBeenCalled();
     expect(document.body.innerHTML).not.toMatch(/backdrop-(?:blur|filter)|backdrop-filter/);
     expect(screen.queryByRole("list")).not.toBeInTheDocument();
+  });
+
+  it("never requests a premium report from a locked card", async () => {
+    vi.stubGlobal("location", { href: "" });
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse({ url: "https://sandbox.polar.sh/checkout/abc" }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    render(<PremiumSection analysisId={analysisId} isSubscribed={false} />);
+
+    screen.getAllByRole("button", { name: "Premium으로 보기" }).forEach((button) => {
+      fireEvent.click(button);
+    });
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    expect(
+      fetchMock.mock.calls.filter(([path]) => String(path).includes("/api/reports/")),
+    ).toHaveLength(0);
+  });
+
+  it("starts checkout and redirects to the hosted checkout url", async () => {
+    vi.stubGlobal("location", { href: "" });
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse({ url: "https://sandbox.polar.sh/checkout/abc" }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    render(<PremiumSection analysisId={analysisId} isSubscribed={false} />);
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Premium으로 보기" })[0]);
+
+    await waitFor(() =>
+      expect(window.location.href).toBe("https://sandbox.polar.sh/checkout/abc"),
+    );
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(fetchMock).toHaveBeenCalledWith("/api/checkout", { method: "POST" });
+    expect(fetchMock.mock.calls[0]?.[1]).not.toHaveProperty("body");
+  });
+
+  it("blocks duplicate checkout clicks while one is in flight", () => {
+    vi.stubGlobal("location", { href: "" });
+    let resolveResponse!: (response: Response) => void;
+    const fetchMock = vi.fn(
+      () => new Promise<Response>((resolve) => { resolveResponse = resolve; }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    render(<PremiumSection analysisId={analysisId} isSubscribed={false} />);
+
+    const buttons = screen.getAllByRole("button", { name: "Premium으로 보기" });
+    fireEvent.click(buttons[0]);
+    fireEvent.click(buttons[0]);
+    fireEvent.click(buttons[1]);
+
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(screen.getAllByRole("button", { name: "이동 중..." })).toHaveLength(4);
+    screen.getAllByRole("button", { name: "이동 중..." }).forEach((button) => {
+      expect(button).toBeDisabled();
+    });
+    void resolveResponse;
+  });
+
+  it("keeps the CTA disabled after a successful checkout response", async () => {
+    vi.stubGlobal("location", { href: "" });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(jsonResponse({ url: "https://sandbox.polar.sh/checkout/abc" })),
+    );
+    render(<PremiumSection analysisId={analysisId} isSubscribed={false} />);
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Premium으로 보기" })[0]);
+
+    await waitFor(() => expect(window.location.href).not.toBe(""));
+    screen.getAllByRole("button", { name: "이동 중..." }).forEach((button) => {
+      expect(button).toBeDisabled();
+    });
+  });
+
+  it.each([
+    [401, "UNAUTHORIZED"],
+    [403, "FORBIDDEN"],
+    [409, "ALREADY_SUBSCRIBED"],
+    [502, "CHECKOUT_FAILED"],
+    [500, "INTERNAL_ERROR"],
+  ])("shows the shared error modal when checkout fails with %s", async (status, code) => {
+    vi.stubGlobal("location", { href: "" });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ code }, status)));
+    render(<PremiumSection analysisId={analysisId} isSubscribed={false} />);
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Premium으로 보기" })[0]);
+
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog).toHaveTextContent("문제가 발생했어요. 잠시 후 다시 시도해 주세요.");
+    expect(dialog).not.toHaveTextContent(code);
+    expect(dialog).not.toHaveTextContent(String(status));
+    expect(window.location.href).toBe("");
+    expect(screen.getAllByRole("button", { name: "Premium으로 보기" })[0]).toBeEnabled();
+  });
+
+  it("shows the shared error modal when checkout rejects", async () => {
+    vi.stubGlobal("location", { href: "" });
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network failure")));
+    render(<PremiumSection analysisId={analysisId} isSubscribed={false} />);
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Premium으로 보기" })[0]);
+
+    expect(await screen.findByRole("dialog")).toHaveTextContent(
+      "문제가 발생했어요. 잠시 후 다시 시도해 주세요.",
+    );
+    expect(window.location.href).toBe("");
+    expect(screen.getAllByRole("button", { name: "Premium으로 보기" })[0]).toBeEnabled();
   });
 
   it("fetches each exact report path only when a subscribed card is clicked", async () => {

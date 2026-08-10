@@ -1,0 +1,48 @@
+{
+  "project": "finsight",
+  "phase": "6-polar-billing",
+  "steps": [
+    {
+      "step": 0,
+      "name": "src/services/polar 래퍼 — 체크아웃 생성·웹훅 서명검증·상태 매핑",
+      "status": "completed",
+      "started_at": "2026-08-10T10:41:08+0900",
+      "summary": "Polar SDK 체크아웃·웹훅 검증·구독 상태 매핑 래퍼와 유닛 테스트를 추가했다.",
+      "completed_at": "2026-08-10T10:45:40+0900"
+    },
+    {
+      "step": 1,
+      "name": "POST /api/checkout — Polar Hosted Checkout 세션 발급",
+      "status": "completed",
+      "started_at": "2026-08-10T10:45:40+0900",
+      "summary": "인증·동일 출처·중복 구독을 검증하고 Polar Hosted Checkout URL만 반환하는 POST 라우트와 테스트를 추가했다.",
+      "completed_at": "2026-08-10T10:48:25+0900"
+    },
+    {
+      "step": 2,
+      "name": "/api/webhooks/polar 501 스텁 교체 — 서명 검증 + subscriptions upsert",
+      "status": "completed",
+      "started_at": "2026-08-10T10:48:25+0900",
+      "summary": "Polar 웹훅 서명을 검증하고 이벤트별 구독 상태를 service-role upsert로 갱신하는 라우트와 테스트를 추가했다.",
+      "completed_at": "2026-08-10T10:52:12+0900"
+    },
+    {
+      "step": 3,
+      "name": "PremiumSection 업그레이드 CTA 연결 + 결제 복귀 배너",
+      "status": "completed",
+      "started_at": "2026-08-10T10:52:12+0900",
+      "summary": "Premium 업그레이드 CTA를 Hosted Checkout에 연결하고 결제 복귀 상태별 안내 배너와 테스트를 추가했다.",
+      "completed_at": "2026-08-10T10:58:20+0900"
+    },
+    {
+      "step": 4,
+      "name": "웹훅 payload 파싱 실패를 5xx로 분리 (QA 코드검증 M-1)",
+      "status": "completed",
+      "started_at": "2026-08-10T11:19:26+0900",
+      "summary": "지원 웹훅의 payload 파싱 실패는 5xx로 재시도시키고 확인된 미지원 이벤트만 200으로 무시하도록 분류를 수정했다.",
+      "completed_at": "2026-08-10T11:22:54+0900"
+    }
+  ],
+  "created_at": "2026-08-10T10:41:08+0900",
+  "completed_at": "2026-08-10T11:22:54+0900"
+}

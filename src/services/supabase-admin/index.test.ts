@@ -6,7 +6,12 @@ const { createServiceClient } = vi.hoisted(() => ({ createServiceClient: vi.fn()
 
 vi.mock("../../lib/supabase/service", () => ({ createServiceClient }))
 
-import { insertAnalysis, upsertPremiumReport } from "."
+import {
+  insertAnalysis,
+  isUnknownUserError,
+  upsertPremiumReport,
+  upsertSubscriptionStatus,
+} from "."
 
 const maskedTransactions = [
   { merchant: "Cafe", card: "****1234" },
@@ -35,6 +40,24 @@ function reportQuery(options: {
   const eqUpdate = vi.fn(async () => ({ error: options.updateError ?? null }))
   const update = vi.fn(() => ({ eq: eqUpdate }))
   return { select, eqOwner, ownerSingle, update, eqUpdate }
+}
+
+function subscriptionQuery(result: { error: unknown } = { error: null }) {
+  const upsert = vi.fn(
+    async (
+      payload: {
+        user_id: string
+        status: "active" | "inactive"
+        updated_at: string
+      },
+      options: { onConflict: string },
+    ) => {
+      void payload
+      void options
+      return result
+    },
+  )
+  return { upsert }
 }
 
 describe("supabase-admin writes", () => {
@@ -104,5 +127,47 @@ describe("supabase-admin writes", () => {
       premium_reports: { ...cached, anomaly_detection: report },
     })
     expect(query.eqUpdate).toHaveBeenCalledWith("id", "analysis-1")
+  })
+
+  it("upserts a subscription status with an explicit updated timestamp", async () => {
+    const query = subscriptionQuery()
+    const from = vi.fn(() => query)
+    createServiceClient.mockReturnValue({ from })
+
+    await expect(
+      upsertSubscriptionStatus({ userId: "user-1", status: "active" }),
+    ).resolves.toBeUndefined()
+
+    expect(from).toHaveBeenCalledWith("subscriptions")
+    expect(query.upsert).toHaveBeenCalledTimes(1)
+    const [payload, options] = query.upsert.mock.calls[0]
+    expect(payload).toEqual({
+      user_id: "user-1",
+      status: "active",
+      updated_at: expect.any(String),
+    })
+    expect(options).toEqual({ onConflict: "user_id" })
+    expect(new Date(payload.updated_at).toString()).not.toBe("Invalid Date")
+  })
+
+  it("throws subscription upsert errors", async () => {
+    const error = new Error("database unavailable")
+    const query = subscriptionQuery({ error })
+    createServiceClient.mockReturnValue({ from: vi.fn(() => query) })
+
+    await expect(
+      upsertSubscriptionStatus({ userId: "user-1", status: "inactive" }),
+    ).rejects.toBe(error)
+  })
+
+  it.each([
+    [{ code: "23503" }, true],
+    [{ code: "23505" }, false],
+    [new Error("boom"), false],
+    [null, false],
+    [undefined, false],
+    ["23503", false],
+  ])("classifies unknown-user database errors %#", (error, expected) => {
+    expect(isUnknownUserError(error)).toBe(expected)
   })
 })

@@ -108,6 +108,7 @@ finsight를 브라우저 자동화 도구(dev-browser 등)로 테스트할 때�
 - **기대 결과**
   - 4개 카드(`data-testid="premium-card-{type}"`)에 `PREMIUM` 배지 + **`Premium으로 보기`** 버튼만 노출
   - 리포트 본문·`리포트 보기` 버튼은 없음
+  - `Premium으로 보기` 클릭 시 `POST /api/checkout`이 호출되고 Polar Hosted Checkout으로 이동하며, `/api/reports/...` 요청은 여전히 발생하지 않음
   - (API 직접 호출 시) 미구독자의 `/api/reports/...` 요청은 `403 PAYWALL_REQUIRED`로 거부되어야 함
 
 ### UC-09. 구독자가 Premium 리포트를 조회한다
@@ -125,6 +126,20 @@ finsight를 브라우저 자동화 도구(dev-browser 등)로 테스트할 때�
   - `403 PAYWALL_REQUIRED`: `이 리포트는 Premium 구독에서 확인할 수 있어요.`
   - `404 NOT_FOUND`: `요청하신 분석을 찾을 수 없어요. 다시 시도해 주세요.`
   - `502 GENERATION_FAILED`: `리포트를 생성하지 못했어요. 잠시 후 다시 시도해 주세요.`
+
+### UC-11. 미구독자가 업그레이드하고 대시보드로 복귀한다
+- **목적**: Hosted Checkout 진입부터 결제 복귀 안내와 웹훅 반영까지 확인
+- **사전조건**: 구독하지 않은 로그인 계정, 분석 상세 페이지, 로컬에서는 `polar listen http://localhost:3000/api/webhooks/polar` 실행
+- **단계**
+  1. 잠금 카드의 `Premium으로 보기` 클릭 (`이동 중...` 표시, 4개 버튼 비활성)
+  2. Polar 샌드박스 체크아웃에서 결제
+  3. `/dashboard?checkout=success`로 복귀
+- **기대 결과**
+  - `결제가 완료됐어요` 배너 노출
+  - 주소창에서 `?checkout=success`가 사라지고, 새로고침해도 배너가 다시 뜨지 않음
+  - 웹훅이 이미 처리됐으면 `아래 업로드 이력에서 분석을 열면 Premium 리포트를 확인할 수 있어요.` 표시
+  - 웹훅이 아직 처리되지 않았으면 `구독 반영까지 몇 초 걸릴 수 있어요. Premium 리포트가 아직 잠겨 있다면 잠시 후 페이지를 새로고침해 주세요.` 표시 후, 새로고침하면 Premium 잠금이 풀림
+- **실패 시**: 체크아웃 생성 실패는 페이지 이동 없이 공용 ErrorModal의 `문제가 발생했어요. 잠시 후 다시 시도해 주세요.`로 표시
 
 ---
 

@@ -184,7 +184,33 @@ function ReportData({ report }: { report: PremiumReport }) {
 export function PremiumSection({ analysisId, isSubscribed }: PremiumSectionProps) {
   const [reports, setReports] = useState<Partial<Record<ReportType, PremiumReport>>>({});
   const [loading, setLoading] = useState<ReportType | null>(null);
+  const [isStartingCheckout, setIsStartingCheckout] = useState(false);
   const { error, isOpen, handleResponse, close } = useApiError();
+
+  async function startCheckout() {
+    if (isStartingCheckout) return;
+    setIsStartingCheckout(true);
+
+    try {
+      const response = await fetch("/api/checkout", { method: "POST" });
+      if (await handleResponse(response)) {
+        setIsStartingCheckout(false);
+        return;
+      }
+
+      const { url } = (await response.json()) as { url: string };
+      if (typeof url !== "string" || url === "") {
+        await handleResponse(new Response("", { status: 500 }));
+        setIsStartingCheckout(false);
+        return;
+      }
+
+      window.location.href = url;
+    } catch {
+      await handleResponse(new Response("", { status: 500 }));
+      setIsStartingCheckout(false);
+    }
+  }
 
   async function loadReport(reportType: ReportType) {
     if (!isSubscribed || loading === reportType || reports[reportType]) {
@@ -244,9 +270,20 @@ export function PremiumSection({ analysisId, isSubscribed }: PremiumSectionProps
                 {data ? <ReportData report={data} /> : null}
               </>
             ) : (
-              <Button className="mt-6 gap-2" type="button">
-                <LockIcon />
-                Premium으로 보기
+              <Button
+                className="mt-6 gap-2"
+                disabled={isStartingCheckout}
+                onClick={() => void startCheckout()}
+                type="button"
+              >
+                {isStartingCheckout ? (
+                  "이동 중..."
+                ) : (
+                  <>
+                    <LockIcon />
+                    Premium으로 보기
+                  </>
+                )}
               </Button>
             )}
           </article>

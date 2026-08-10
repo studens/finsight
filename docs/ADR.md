@@ -35,6 +35,17 @@ MVP 속도 최우선. 검증 안 된 미래 요구사항을 위해 지금 만들
 **이유**: 아직 값을 채울 수 없는 Polar 전용 컬럼(customer_id, current_period_end 등)이나 웹훅 처리/멱등성 로직을 지금 만들어봐야 실제 결제로 검증할 수 없다.
 **트레이드오프**: 이번 phase에서 Premium 흐름을 확인하려면 `subscriptions` 레코드를 수동으로 만들어 테스트해야 한다. `polar-billing` phase에서 `subscriptions` 마이그레이션(컬럼 추가), `polar_webhook_events` 테이블, 체크아웃/웹훅 코드와 관련 테스트가 추가로 필요하다.
 
+> **[2026-08-07 개정 — `6-polar-billing` phase 계획 시 확정]**
+> 위 트레이드오프 문단의 **"마이그레이션(컬럼 추가)과 `polar_webhook_events` 테이블이 필요하다"는 예상은 실현되지 않았다.** 그 문장은 결정이 아니라 당시의 비용 추정이며, 실제 설계 검토 결과 **둘 다 만들지 않는다.**
+>
+> - **Polar 고객 ↔ Supabase 사용자 매핑**: 체크아웃 생성 시 `externalCustomerId`에 Supabase `user.id`를 실어 보내고 웹훅에서 역참조한다. 별도 컬럼이 필요 없다.
+> - **멱등성**: 쓰기가 `subscriptions.user_id`(unique)를 충돌 키로 하는 **upsert 1회**이고 `status`가 이벤트 타입의 순수 함수라 구조적으로 멱등하다. 같은 이벤트를 Polar의 최대 10회 재시도로 받아도 결과 행이 동일하므로 `polar_webhook_events` dedup 테이블이 불필요하다.
+> - `polar_subscription_id`에 unique를 걸면 오히려 해지 후 재구독 시 새 id와 잔존 id가 충돌하는 **새 실패 모드**가 생긴다.
+>
+> **따라서 `6-polar-billing` phase는 `supabase/migrations/` 아래에 파일을 추가하지 않고 `src/types/database.ts`도 바꾸지 않는다.** 마이그레이션이 정당화되는 유일한 시점은 이벤트 순서 뒤바뀜을 막는 `polar_event_at` 가드 컬럼이 필요해질 때이며, 그건 이 phase 범위 밖이다.
+>
+> 또한 **구독 해제는 오직 `subscription.revoked` 하나로만 일어난다.** 위 결정문의 "취소 시에도 이미 결제된 기간이 끝날 때까지 Premium을 유지한다"를 코드로 옮긴 것이다 — Polar에서 `subscription.canceled`는 *해지 예약*(기간 말 종료 예정) 시점이고, `subscription.past_due`는 결제 재시도(dunning) 중일 뿐이다. 둘 다 상태를 바꾸지 않고 200으로 무시한다.
+
 ### ADR-007: Premium 인사이트는 구독자 최초 조회 시 지연 생성(lazy-generate)한다
 **결정**: Free 사용자에 대해서는 Premium 인사이트(전월 대비, 이상 거래 탐지, 절약 제안, 예산 추천)를 애초에 계산하지 않는다. 업로드 시점엔 Free 요약만 생성/저장하고, Premium 리포트는 구독 중인 사용자가 해당 탭을 처음 열 때 서버가 그 시점에 생성해 캐시한다. 미구독 사용자가 Premium 리포트를 요청하면 생성을 시도하지 않고 403(PAYWALL_REQUIRED)으로 거부한다. Free 사용자 UI는 실제 데이터의 블러 미리보기가 아니라, 데이터 없이 "업그레이드하면 볼 수 있음"을 안내하는 정적 잠금 카드로 노출한다. 이렇게 하면 "무료로 업로드 후 나중에 구독"과 "이미 구독 중 신규 업로드" 두 경우를 같은 코드 경로(최초 조회 시 생성)로 처리할 수 있다.
 **이유**: 대다수일 Free 사용자에 대해 안 보여줄 Premium 인사이트를 업로드마다 미리 계산하면 Claude API 비용이 낭비된다. 지연 생성은 실제로 조회되는 만큼만 비용이 발생해 무구독 사용자의 비용을 원천 차단한다.
