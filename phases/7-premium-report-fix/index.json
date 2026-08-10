@@ -5,7 +5,10 @@
     {
       "step": 0,
       "name": "merge_premium_report RPC — 원자적 jsonb 병합 마이그레이션",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-08-10T17:21:59+0900",
+      "summary": "merge_premium_report RPC(원자적 jsonb 병합)를 마이그레이션으로 추가·원격 적용하고 database.ts Functions 타입을 반영했다. Codex 세션에 Supabase MCP가 없어 blocked됐던 것을 오케스트레이터가 MCP로 직접 수행했다. AC 전부 실측 검증: 시그니처(argnames 4개/boolean/volatile v/secdef false/search_path=\"\"), 권한(anon·authenticated false, service_role true), analyses RLS는 SELECT 1건 유지, 롤백 do-block 검증값 r1=t·first={qa:{n:1}}·merged에 qa/qa2 공존·replaced에서 qa만 교체·foreign=<NULL>·unchanged=t, 프로덕션 지문 0b2a572bd52e16f808b21d4250cc3215 전후 동일(n=3), security advisor 신규 경고 없음. typecheck/lint 0 errors/409 tests 통과.",
+      "completed_at": "2026-08-10T17:25:30+0900"
     },
     {
       "step": 1,
@@ -22,5 +25,6 @@
       "name": "실 DB 스모크 검증 — RPC 왕복과 4키 동시 병합 확인",
       "status": "pending"
     }
-  ]
+  ],
+  "created_at": "2026-08-10T17:21:59+0900"
 }
