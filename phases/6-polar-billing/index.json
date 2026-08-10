@@ -33,8 +33,12 @@
       "started_at": "2026-08-10T10:52:12+0900",
       "summary": "Premium 업그레이드 CTA를 Hosted Checkout에 연결하고 결제 복귀 상태별 안내 배너와 테스트를 추가했다.",
       "completed_at": "2026-08-10T10:58:20+0900"
+    },
+    {
+      "step": 4,
+      "name": "웹훅 payload 파싱 실패를 5xx로 분리 (QA 코드검증 M-1)",
+      "status": "pending"
     }
   ],
-  "created_at": "2026-08-10T10:41:08+0900",
-  "completed_at": "2026-08-10T10:58:20+0900"
+  "created_at": "2026-08-10T10:41:08+0900"
 }

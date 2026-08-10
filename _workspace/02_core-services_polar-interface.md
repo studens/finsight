@@ -69,14 +69,19 @@ export function verifyPolarWebhook(input: {
 - `headers`는 `Headers` 인스턴스를 그대로 넘겨도 된다. 서비스 내부에서 소문자 키의 평범한 객체로 정규화한다.
 - **`body`는 반드시 raw 문자열이어야 한다.** `await request.text()`를 쓰고, `request.json()`을 쓰지 마라 — 재직렬화하면 바이트가 달라져 서명이 100% 깨진다. 라우트에서 body를 먼저 파싱한 뒤 다시 stringify하는 것도 금지.
 
-### 3가지 결과와 HTTP 매핑
+### 결과와 HTTP 매핑
 
-| 결과 | 의미 | step 2(웹훅 라우트)의 응답 |
+> **2026-08-10 변경 (step 4).** 초판은 "`WebhookVerificationError`가 아닌 예외 = 모르는 이벤트 타입"으로 단정해 전부 `{ kind: "unsupported" }`(200)로 흡수했다. **틀렸다.** SDK는 "모르는 타입"과 "**우리가 처리하는 타입**의 스키마 파싱 실패"를 똑같은 `SDKValidationError`로 던진다. 그 결과 결제 직후의 `subscription.active`가 스키마 불일치로 깨지면 **200으로 조용히 폐기되고 Polar가 재시도하지 않아 Premium이 영영 안 열렸다.** step 4가 raw body의 `type`을 읽어 둘을 구별하도록 고쳤다.
+
+| 결과 | 의미 | 웹훅 라우트의 응답 |
 |---|---|---|
 | `{ kind: "event", event }` 반환 | 서명 유효 + 파싱 성공 | 아래 3·4절대로 처리 후 200 |
-| `{ kind: "unsupported" }` 반환 | **서명은 유효**하나 SDK가 모르는 이벤트 타입 | DB 쓰기 없이 **200** `{ received: true, ignored: "unhandled_event" }`. 에러 아님 |
+| `{ kind: "unsupported" }` 반환 | 서명 유효, `type`을 읽었고 **처리 대상 3종이 아님** | DB 쓰기 없이 **200** `{ received: true, ignored: "unhandled_event" }`. 에러 아님 |
+| **`PolarWebhookPayloadError` throw** | 서명 유효, 그러나 **처리 대상 타입인데 파싱 실패** 하거나 **`type` 자체를 읽을 수 없음**(깨진 JSON 등) | **5xx**. Polar가 재시도하고 실패가 대시보드 전달 로그에 남는다 |
 | `PolarWebhookVerificationError` throw | 서명 불일치 / 변조 / 필수 헤더 누락 | **403**(본문에 상세 사유 금지). DB를 절대 건드리지 않는다 |
 | `PolarConfigError` throw | `POLAR_WEBHOOK_SECRET` 미설정 (서버 설정 오류) | **500**. 403이 아니다 |
+
+핵심 불변식: **처리 대상이 아님을 적극적으로 확인했을 때만 200으로 무시한다. 확인할 수 없으면 던진다.**
 
 서명 검증 통과 이후의 응답 코드는 db-schema 매핑 규약 §3의 표를 따른다:
 `resolveUserId → null`이면 200 `{ received: true, ignored: "unresolved_customer" }`,
@@ -84,7 +89,7 @@ export function verifyPolarWebhook(input: {
 FK 위반(23503)이면 200 `{ received: true, ignored: "unknown_user" }`,
 그 외 일시적 DB 오류만 5xx(Polar 재시도에 맡긴다).
 
-`{ kind: "unsupported" }`가 200인 이유: 서명 검증은 이미 통과했으므로 진짜 Polar가 보낸 요청이고, 우리는 `subscription.active`/`uncanceled`/`revoked` 3종에만 반응하면 되기 때문이다. 여기서 5xx를 내면 Polar가 무한 재시도한다.
+`{ kind: "unsupported" }`가 200인 이유: Polar는 앞으로도 새 이벤트 타입을 계속 추가하고 우리는 `subscription.active`/`uncanceled`/`revoked` 3종에만 반응하면 되기 때문이다. 모르는 타입마다 5xx를 내면 Polar가 재시도를 반복하다 엔드포인트를 실패로 표시한다. **단, 이 200은 `type`을 실제로 읽어 "3종이 아님"을 확인했을 때만 적용된다** — `type`을 못 읽으면 잘린 `subscription.active`일 수 있으므로 `PolarWebhookPayloadError`로 던진다.
 
 ### 에러 클래스
 
@@ -98,9 +103,14 @@ export class PolarConfigError extends Error {
 export class PolarApiError extends Error {
   readonly code = "POLAR_API_ERROR"
 }
+export class PolarWebhookPayloadError extends Error {   // step 4 추가
+  readonly code = "POLAR_WEBHOOK_PAYLOAD_INVALID"
+}
 ```
 
-- 세 클래스 모두 배럴에서 export되므로 라우트에서 `instanceof`로 분기한다.
+- 네 클래스 모두 배럴에서 export된다.
+- **`PolarWebhookPayloadError`는 라우트가 `instanceof`로 분기할 필요가 없다.** 웹훅 라우트의 기존 catch가 `PolarWebhookVerificationError`가 아닌 모든 throw를 이미 500 `{ code: "INTERNAL_ERROR" }`로 매핑하므로 자동으로 처리된다. 라우트에 import하지 마라 — 응답이 같은데 서비스 에러 타입만 하나 더 알게 되어 경계가 나빠진다.
+- 그 catch-all이 **좁혀지면 안 된다**는 것이 이제 계약의 일부다(step 4 테스트가 고정).
 - **`error.message`를 응답 본문에 담지 마라.** 라우트는 `_workspace/03_api-routes_contract.md`의 공통 형식대로 `{ code }`만 반환한다.
 - 체크아웃 라우트(step 1)에서 `PolarApiError` → **502 `GENERATION_FAILED`**... 는 LLM 전용 코드이므로 어울리지 않는다. **`{ code: "CHECKOUT_FAILED" }` + 502**를 신규 코드로 쓰는 것을 권장한다(기존 표에 결제용 코드가 없다 — api-routes planner가 확정하고 계약 문서에 추가하라).
 - `PolarConfigError`는 어느 라우트에서든 **500** + `{ code: "INTERNAL_ERROR" }`. 변수 이름조차 응답에 노출할 필요 없다.
