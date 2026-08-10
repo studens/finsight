@@ -62,3 +62,28 @@ export async function upsertPremiumReport(input: {
 
   if (updateError) throw updateError
 }
+
+export async function upsertSubscriptionStatus(input: {
+  userId: string
+  status: "active" | "inactive"
+}): Promise<void> {
+  const supabase = createServiceClient()
+  const { error } = await supabase.from("subscriptions").upsert(
+    {
+      user_id: input.userId,
+      status: input.status,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "user_id" },
+  )
+
+  if (error) throw error
+}
+
+export function isUnknownUserError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    (error as { code?: unknown }).code === "23503"
+  )
+}

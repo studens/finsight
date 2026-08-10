@@ -21,7 +21,10 @@
     {
       "step": 2,
       "name": "/api/webhooks/polar 501 스텁 교체 — 서명 검증 + subscriptions upsert",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-08-10T10:48:25+0900",
+      "summary": "Polar 웹훅 서명을 검증하고 이벤트별 구독 상태를 service-role upsert로 갱신하는 라우트와 테스트를 추가했다.",
+      "completed_at": "2026-08-10T10:51:30+0900"
     },
     {
       "step": 3,
