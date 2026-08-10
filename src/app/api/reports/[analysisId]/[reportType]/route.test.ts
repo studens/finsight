@@ -1,4 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from "vitest"
+import { inspect } from "node:util"
+
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import type {
   AnalysisRecord,
@@ -67,13 +69,20 @@ function callGet(
 }
 
 describe("GET /api/reports/[analysisId]/[reportType]", () => {
+  let errorSpy: ReturnType<typeof vi.spyOn> | undefined
+
   beforeEach(() => {
+    errorSpy = undefined
     getSessionUser.mockReset().mockResolvedValue({ id: "user-1" })
     getAnalysisById.mockReset().mockResolvedValue(analysis())
     getSubscriptionStatus.mockReset().mockResolvedValue("active")
     getPreviousAnalysis.mockReset().mockResolvedValue(null)
     generateReport.mockReset().mockResolvedValue(report)
     upsertPremiumReport.mockReset().mockResolvedValue(undefined)
+  })
+
+  afterEach(() => {
+    errorSpy?.mockRestore()
   })
 
   it("returns UNAUTHORIZED before reading route resources", async () => {
@@ -201,6 +210,7 @@ describe("GET /api/reports/[analysisId]/[reportType]", () => {
   })
 
   it("returns GENERATION_FAILED without caching when generation throws", async () => {
+    errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined)
     generateReport.mockRejectedValue(new Error("provider unavailable"))
 
     const response = await callGet()
@@ -208,5 +218,108 @@ describe("GET /api/reports/[analysisId]/[reportType]", () => {
     expect(response.status).toBe(502)
     await expect(response.json()).resolves.toEqual({ code: "GENERATION_FAILED" })
     expect(upsertPremiumReport).not.toHaveBeenCalled()
+    expect(errorSpy).toHaveBeenCalledWith(
+      "[reports] 리포트 생성 실패",
+      expect.objectContaining({
+        reportType: "anomaly_detection",
+        errorName: "Error",
+      }),
+    )
+  })
+
+  it("returns the generated report when caching throws and logs the failure", async () => {
+    errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined)
+    upsertPremiumReport.mockRejectedValue(new Error("cache unavailable"))
+
+    const response = await callGet()
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toEqual({
+      reportType: "anomaly_detection",
+      data: report,
+    })
+    expect(errorSpy).toHaveBeenCalledWith(
+      "[reports] 리포트 캐시 저장 실패",
+      expect.objectContaining({
+        reportType: "anomaly_detection",
+        errorName: "Error",
+      }),
+    )
+  })
+
+  it("logs only allowlisted diagnostics when generation fails", async () => {
+    errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined)
+    getAnalysisById.mockResolvedValue({
+      ...analysis(),
+      masked_transactions: [
+        {
+          card: "****1234",
+          amount: "12000",
+          merchant: "LEAK_MARKER_MERCHANT",
+        },
+      ],
+    })
+    generateReport.mockRejectedValue(
+      Object.assign(new Error("api failed"), {
+        name: "AI_APICallError",
+        statusCode: 500,
+        requestBodyValues: { prompt: "LEAK_MARKER_MERCHANT 12000원" },
+        responseBody: "LEAK_MARKER_REPORT",
+      }),
+    )
+
+    const response = await callGet()
+
+    expect(response.status).toBe(502)
+    await expect(response.json()).resolves.toEqual({ code: "GENERATION_FAILED" })
+    const logged = inspect(errorSpy.mock.calls, { depth: null })
+    expect(logged).not.toContain("LEAK_MARKER_MERCHANT")
+    expect(logged).not.toContain("LEAK_MARKER_REPORT")
+
+    const payload = errorSpy.mock.calls[0][1] as Record<string, unknown>
+    const allowed = new Set([
+      "analysisId",
+      "reportType",
+      "errorName",
+      "statusCode",
+      "code",
+    ])
+    expect(Object.keys(payload).filter((key) => !allowed.has(key))).toEqual([])
+    expect(payload.errorName).toBe("AI_APICallError")
+    expect(payload.statusCode).toBe(500)
+  })
+
+  it("logs only allowlisted diagnostics when caching fails", async () => {
+    errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined)
+    upsertPremiumReport.mockRejectedValue(
+      Object.assign(new Error("LEAK_MARKER_REPORT"), {
+        name: "PostgrestError",
+        code: "PGRST202",
+        details: "LEAK_MARKER_REPORT",
+        hint: "LEAK_MARKER_REPORT",
+      }),
+    )
+
+    const response = await callGet()
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toEqual({
+      reportType: "anomaly_detection",
+      data: report,
+    })
+    const logged = inspect(errorSpy.mock.calls, { depth: null })
+    expect(logged).not.toContain("LEAK_MARKER_REPORT")
+
+    const payload = errorSpy.mock.calls[0][1] as Record<string, unknown>
+    const allowed = new Set([
+      "analysisId",
+      "reportType",
+      "errorName",
+      "statusCode",
+      "code",
+    ])
+    expect(Object.keys(payload).filter((key) => !allowed.has(key))).toEqual([])
+    expect(payload.errorName).toBe("PostgrestError")
+    expect(payload.code).toBe("PGRST202")
   })
 })
