@@ -29,7 +29,9 @@
     {
       "step": 3,
       "name": "실 DB 스모크 검증 — RPC 왕복과 4키 동시 병합 확인",
-      "status": "pending"
+      "status": "blocked",
+      "started_at": "2026-08-10T17:31:01+0900",
+      "blocked_reason": "사용자가 브라우저에서 직접 수행해야 함. 이 Codex 세션에는 Supabase MCP execute_sql 및 브라우저 조작 도구가 없어 동시 카드 클릭과 서버 콘솔 확인을 수행할 수 없다. 실행 전 상태(2026-08-10, service-role Supabase REST 실조회; 키 이름 정렬): cb0eefa6-01cf-4f5d-ba7f-b8cc74157106 (created_at 2026-08-10T07:03:22.61079+00:00) cached_keys=anomaly_detection,budget_recommendation,mom_comparison,savings_suggestions; deffb84a-a249-4ff6-ac4b-9c4880a51a84 (created_at 2026-07-30T10:03:52.371903+00:00) cached_keys=(none); 27aaa9b7-6d6e-4881-aad6-4e26a002a044 (created_at 2026-07-21T10:38:57.985215+00:00) cached_keys=anomaly_detection,budget_recommendation,mom_comparison,savings_suggestions. 수동 확인 절차 2~5: (2) cached_keys가 (none)인 deffb84a-a249-4ff6-ac4b-9c4880a51a84를 대상으로 선택한다. 이 행이 더는 비어 있지 않다면 기존 premium_reports를 비우지 말고 새 CSV/PDF를 업로드해 새 분석을 만들고, 새 id와 실행 전 cached_keys=(none)을 기록한다. (3) active 구독 계정으로 npm run dev 후 /dashboard/{선택한 analysis id}에 접속해 Premium 카드 4개를 서로 다른 카드로, 앞 카드의 로딩이 끝나기 전에 연달아 누른다. (4) 실행 전과 같은 행별 조회를 다시 실행해 대상 행 cached_keys가 정확히 anomaly_detection,budget_recommendation,mom_comparison,savings_suggestions인지 확인하고, 대상 외 모든 행의 cached_keys가 실행 전과 동일한지 대조한다. 하나라도 없으면 phase 실패이며 기존 analyses 행의 premium_reports를 임의 삭제·덮어쓰지 않는다. (5) 서버 콘솔에 [reports] 리포트 캐시 저장 실패가 없는지 확인한다. 로그가 있다면 errorName과 code를 기록하고 원인을 규명한다. 특히 code=PGRST202이면 PostgREST가 함수를 찾지 못한 것이므로 step 0의 스키마 캐시 리로드(notify pgrst) 또는 RPC 파라미터명 불일치를 점검한다. PostgrestError의 name은 항상 PostgrestError이므로 errorName만으로 판단하지 않는다."
     }
   ],
   "created_at": "2026-08-10T17:21:59+0900"
