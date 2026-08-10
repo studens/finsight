@@ -81,6 +81,7 @@ src/
 → 결제 완료 → Polar 웹훅(/api/webhooks/polar) → services/polar: 서명 검증
 → services/supabase-admin: subscriptions 테이블 갱신 → 다음 요청부터 Premium 게이팅 해제
 ```
+체크아웃 성공 후 `/dashboard?checkout=success`로 복귀하면 서버가 쿼리를 보고 `CheckoutSuccessBanner`를 1회 렌더한다. 웹훅이 아직 도착하지 않았을 수 있으므로 상태별 문구로 안내하며 폴링하지 않는다.
 이번 phase에는 `subscriptions` 테이블 스키마만 존재하고 위 흐름의 실제 구현(체크아웃 세션 생성, 웹훅 처리)은 없다. 개발 중 Premium 흐름을 확인하려면 `subscriptions` 레코드를 수동으로 만들어 테스트한다.
 
 ### 5) 에러 표시

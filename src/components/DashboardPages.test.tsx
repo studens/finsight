@@ -60,13 +60,40 @@ describe("dashboard server pages", () => {
       { id: "analysis-1", createdAt: "2026-07-20T03:00:00.000Z", freeSummary: summary },
     ]);
 
-    render(await DashboardPage());
+    render(await DashboardPage({ searchParams: Promise.resolve({}) }));
 
     expect(getSubscriptionStatus).toHaveBeenCalledWith("user-1");
     expect(screen.getByTestId("upload-flow")).toHaveTextContent("true");
     expect(screen.getByRole("link")).toHaveAttribute("href", "/dashboard/analysis-1");
     expect(screen.getAllByText("120,000원")).not.toHaveLength(0);
     expect(screen.getByText("3건")).toBeInTheDocument();
+    expect(screen.queryByTestId("checkout-success-banner")).not.toBeInTheDocument();
+  });
+
+  it("renders a checkout success banner only for the success query", async () => {
+    listUserAnalyses.mockResolvedValue([]);
+    getSubscriptionStatus.mockResolvedValueOnce("inactive");
+    const { unmount } = render(
+      await DashboardPage({ searchParams: Promise.resolve({ checkout: "success" }) }),
+    );
+    expect(screen.getByTestId("checkout-success-banner")).toHaveTextContent(
+      "구독 반영까지 몇 초 걸릴 수 있어요.",
+    );
+    unmount();
+
+    getSubscriptionStatus.mockResolvedValueOnce("active");
+    const active = render(
+      await DashboardPage({ searchParams: Promise.resolve({ checkout: "success" }) }),
+    );
+    expect(screen.getByTestId("checkout-success-banner")).toHaveTextContent(
+      "아래 업로드 이력에서 분석을 열면 Premium 리포트를 확인할 수 있어요.",
+    );
+    active.unmount();
+
+    render(
+      await DashboardPage({ searchParams: Promise.resolve({ checkout: "cancelled" }) }),
+    );
+    expect(screen.queryByTestId("checkout-success-banner")).not.toBeInTheDocument();
   });
 
   it("renders saved Free data and consistent subscription state on detail", async () => {
