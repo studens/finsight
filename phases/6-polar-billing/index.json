@@ -7,7 +7,8 @@
       "name": "src/services/polar 래퍼 — 체크아웃 생성·웹훅 서명검증·상태 매핑",
       "status": "completed",
       "started_at": "2026-08-10T10:41:08+0900",
-      "summary": "Polar SDK 체크아웃·웹훅 검증·구독 상태 매핑 래퍼와 유닛 테스트를 추가했다."
+      "summary": "Polar SDK 체크아웃·웹훅 검증·구독 상태 매핑 래퍼와 유닛 테스트를 추가했다.",
+      "completed_at": "2026-08-10T10:45:40+0900"
     },
     {
       "step": 1,
