@@ -24,3 +24,12 @@ export class PolarApiError extends Error {
     this.name = "PolarApiError"
   }
 }
+
+export class PolarWebhookPayloadError extends Error {
+  readonly code = "POLAR_WEBHOOK_PAYLOAD_INVALID" as const
+
+  constructor() {
+    super("Polar webhook payload could not be parsed")
+    this.name = "PolarWebhookPayloadError"
+  }
+}

@@ -5,7 +5,12 @@ import {
   WebhookVerificationError,
 } from "@polar-sh/sdk/webhooks.js"
 
-import { PolarConfigError, PolarWebhookVerificationError } from "./errors"
+import {
+  PolarConfigError,
+  PolarWebhookPayloadError,
+  PolarWebhookVerificationError,
+} from "./errors"
+import { mapEventToSubscriptionStatus } from "./subscription-status"
 
 export type PolarWebhookEvent = ReturnType<typeof validateEvent>
 
@@ -39,6 +44,28 @@ function normalizeHeaders(headers: Headers | Record<string, string>): Record<str
   return normalized
 }
 
+type RawEventTypeProbe = { kind: "type"; type: string } | { kind: "unreadable" }
+
+/**
+ * 서명 검증을 통과한 뒤에만 호출된다.
+ * 이 파싱은 서명 검증을 대체하지 않는다 — 실패한 전달을 "우리가 처리하는 이벤트인지"
+ * 분류하기 위한 용도로만 쓴다. 이 결과로 DB를 쓰거나 사용자를 식별하지 않는다.
+ */
+function probeRawEventType(body: string): RawEventTypeProbe {
+  try {
+    const parsed: unknown = JSON.parse(body)
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+      return { kind: "unreadable" }
+    }
+    const type = (parsed as Record<string, unknown>).type
+    return typeof type === "string"
+      ? { kind: "type", type }
+      : { kind: "unreadable" }
+  } catch {
+    return { kind: "unreadable" }
+  }
+}
+
 export function verifyPolarWebhook(input: {
   body: string
   headers: Headers | Record<string, string>
@@ -56,6 +83,16 @@ export function verifyPolarWebhook(input: {
   } catch (error) {
     if (error instanceof WebhookVerificationError) {
       throw new PolarWebhookVerificationError()
+    }
+
+    // 여기 도달 = 서명 검증은 이미 통과했다(validateEvent는 검증 후에 파싱한다).
+    // 처리 대상 이벤트가 "아님을 확인한" 경우에만 무시한다. 확인할 수 없으면 던진다.
+    const probe = probeRawEventType(input.body)
+    if (probe.kind === "unreadable") {
+      throw new PolarWebhookPayloadError()
+    }
+    if (mapEventToSubscriptionStatus(probe.type) !== null) {
+      throw new PolarWebhookPayloadError()
     }
     return { kind: "unsupported" }
   }

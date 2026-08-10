@@ -6,9 +6,11 @@ const {
   resolveUserId,
   upsertSubscriptionStatus,
   verifyPolarWebhook,
+  PolarWebhookPayloadError,
   PolarWebhookVerificationError,
   PolarConfigError,
 } = vi.hoisted(() => {
+  class PolarWebhookPayloadError extends Error {}
   class PolarWebhookVerificationError extends Error {}
   class PolarConfigError extends Error {}
   return {
@@ -17,6 +19,7 @@ const {
     resolveUserId: vi.fn(),
     upsertSubscriptionStatus: vi.fn(),
     verifyPolarWebhook: vi.fn(),
+    PolarWebhookPayloadError,
     PolarWebhookVerificationError,
     PolarConfigError,
   }
@@ -26,6 +29,7 @@ vi.mock("../../../../services/polar", () => ({
   mapEventToSubscriptionStatus,
   resolveUserId,
   verifyPolarWebhook,
+  PolarWebhookPayloadError,
   PolarWebhookVerificationError,
   PolarConfigError,
 }))
@@ -110,6 +114,18 @@ describe("POST /api/webhooks/polar", () => {
 
     expect(response.status).toBe(500)
     await expect(response.json()).resolves.toEqual({ code: "INTERNAL_ERROR" })
+  })
+
+  it("returns 5xx for invalid verified payloads without resolving or writing", async () => {
+    verifyPolarWebhook.mockImplementation(() => {
+      throw new PolarWebhookPayloadError()
+    })
+
+    const response = await POST(request("raw-body"))
+
+    expect(response.status).toBeGreaterThanOrEqual(500)
+    expect(resolveUserId).not.toHaveBeenCalled()
+    expect(upsertSubscriptionStatus).not.toHaveBeenCalled()
   })
 
   it("acknowledges unsupported verified events without writing", async () => {

@@ -7,4 +7,9 @@ export {
   SUBSCRIPTION_STATUS_BY_EVENT_TYPE,
 } from "./subscription-status"
 export type { SubscriptionStatusUpdate } from "./subscription-status"
-export { PolarApiError, PolarConfigError, PolarWebhookVerificationError } from "./errors"
+export {
+  PolarApiError,
+  PolarConfigError,
+  PolarWebhookPayloadError,
+  PolarWebhookVerificationError,
+} from "./errors"

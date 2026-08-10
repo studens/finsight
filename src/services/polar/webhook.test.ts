@@ -3,7 +3,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 
 vi.mock("server-only", () => ({}))
 
-import { PolarConfigError, PolarWebhookVerificationError } from "./errors"
+import {
+  PolarConfigError,
+  PolarWebhookPayloadError,
+  PolarWebhookVerificationError,
+} from "./errors"
 import { resolveUserId, verifyPolarWebhook } from "./webhook"
 
 const SECRET = "TestSecret"
@@ -54,6 +58,10 @@ function verifyFixture(fixture: unknown = subscriptionActiveFixture) {
   const result = verifyPolarWebhook({ body, headers: signedHeaders(body) })
   if (result.kind !== "event") throw new Error("Expected a supported event")
   return result.event
+}
+
+function verifyRawBody(body: string) {
+  return verifyPolarWebhook({ body, headers: signedHeaders(body) })
 }
 
 describe("verifyPolarWebhook", () => {
@@ -109,6 +117,45 @@ describe("verifyPolarWebhook", () => {
   it("ignores a validly signed unknown event", () => {
     const body = JSON.stringify({ type: "unknown.event", data: {} })
     expect(verifyPolarWebhook({ body, headers: signedHeaders(body) })).toEqual({ kind: "unsupported" })
+  })
+
+  it.each([
+    "subscription.active",
+    "subscription.uncanceled",
+    "subscription.revoked",
+  ])("rejects an invalid payload for supported event %s", (type) => {
+    const body = `{"type":"${type}","data":{"id":"sub_1"}}`
+    let caught: unknown
+    try { verifyRawBody(body) } catch (error) { caught = error }
+    expect(caught).toBeInstanceOf(PolarWebhookPayloadError)
+    expect(caught).not.toBeInstanceOf(PolarWebhookVerificationError)
+  })
+
+  it("ignores an invalid payload for an unsupported subscription event", () => {
+    const body = '{"type":"subscription.canceled","data":{"id":"sub_1"}}'
+    expect(verifyRawBody(body)).toEqual({ kind: "unsupported" })
+  })
+
+  it.each([
+    '{"type":"subscription.active"',
+    '"just a string"',
+    "null",
+    '{"data":{}}',
+    '{"type":123,"data":{}}',
+  ])("rejects an unreadable event body: %s", (body) => {
+    expect(() => verifyRawBody(body)).toThrow(PolarWebhookPayloadError)
+  })
+
+  it("keeps an invalid signature on the verification error path", () => {
+    const body = '{"type":"subscription.active","data":{"id":"sub_1"}}'
+    let caught: unknown
+    try {
+      verifyPolarWebhook({ body, headers: signedHeaders(body, "OtherSecret") })
+    } catch (error) {
+      caught = error
+    }
+    expect(caught).toBeInstanceOf(PolarWebhookVerificationError)
+    expect(caught).not.toBeInstanceOf(PolarWebhookPayloadError)
   })
 })
 
