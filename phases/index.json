@@ -30,6 +30,10 @@
       "dir": "5-logout",
       "status": "completed",
       "completed_at": "2026-07-30T16:36:42+0900"
+    },
+    {
+      "dir": "6-polar-billing",
+      "status": "pending"
     }
   ]
 }

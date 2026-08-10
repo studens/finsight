@@ -1,0 +1,26 @@
+{
+  "project": "finsight",
+  "phase": "6-polar-billing",
+  "steps": [
+    {
+      "step": 0,
+      "name": "src/services/polar 래퍼 — 체크아웃 생성·웹훅 서명검증·상태 매핑",
+      "status": "pending"
+    },
+    {
+      "step": 1,
+      "name": "POST /api/checkout — Polar Hosted Checkout 세션 발급",
+      "status": "pending"
+    },
+    {
+      "step": 2,
+      "name": "/api/webhooks/polar 501 스텁 교체 — 서명 검증 + subscriptions upsert",
+      "status": "pending"
+    },
+    {
+      "step": 3,
+      "name": "PremiumSection 업그레이드 CTA 연결 + 결제 복귀 배너",
+      "status": "pending"
+    }
+  ]
+}
