@@ -33,7 +33,8 @@
     },
     {
       "dir": "6-polar-billing",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-08-10T10:58:20+0900"
     }
   ]
 }
