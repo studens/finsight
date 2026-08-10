@@ -1,0 +1,26 @@
+{
+  "project": "finsight",
+  "phase": "7-premium-report-fix",
+  "steps": [
+    {
+      "step": 0,
+      "name": "merge_premium_report RPC — 원자적 jsonb 병합 마이그레이션",
+      "status": "pending"
+    },
+    {
+      "step": 1,
+      "name": "upsertPremiumReport를 RPC 호출로 교체 — 읽고-쓰기 제거",
+      "status": "pending"
+    },
+    {
+      "step": 2,
+      "name": "reports 라우트 에러 처리 — catch{} 제거 + 캐시 쓰기 실패 분리",
+      "status": "pending"
+    },
+    {
+      "step": 3,
+      "name": "실 DB 스모크 검증 — RPC 왕복과 4키 동시 병합 확인",
+      "status": "pending"
+    }
+  ]
+}
