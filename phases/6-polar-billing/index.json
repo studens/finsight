@@ -16,7 +16,7 @@
       "status": "completed",
       "started_at": "2026-08-10T10:45:40+0900",
       "summary": "인증·동일 출처·중복 구독을 검증하고 Polar Hosted Checkout URL만 반환하는 POST 라우트와 테스트를 추가했다.",
-      "completed_at": "2026-08-10T10:47:26+0900"
+      "completed_at": "2026-08-10T10:48:25+0900"
     },
     {
       "step": 2,
