@@ -1,0 +1,26 @@
+{
+  "project": "finsight",
+  "phase": "8-qa-minor",
+  "steps": [
+    {
+      "step": 0,
+      "name": "describeError를 src/lib/log.ts로 승격 + code 포맷 가드",
+      "status": "pending"
+    },
+    {
+      "step": 1,
+      "name": "merge_premium_report Returns 타입을 boolean | null로 정정",
+      "status": "pending"
+    },
+    {
+      "step": 2,
+      "name": "p_report_type 화이트리스트 마이그레이션 작성 (원격 적용은 오케스트레이터)",
+      "status": "pending"
+    },
+    {
+      "step": 3,
+      "name": "service-role 키 클라이언트 누출 회귀 가드",
+      "status": "pending"
+    }
+  ]
+}
