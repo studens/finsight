@@ -4,7 +4,7 @@ _최종 갱신: 2026-08-11 16:10_
 
 ## CURRENT STATE
 
-**브랜치:** `main` (`3d6e6fb`). `feat-7-premium-report-fix`는 **머지 완료**(`--no-ff`, 트리 동일 확인). main은 origin/main(`f83cb0d`)보다 **26커밋 앞서며 아직 push 안 됨**.
+**브랜치:** `main`만 존재하며 **`origin/main`과 동기화됨**(`6251895`). `feat-7-premium-report-fix`는 `--no-ff` 머지(`3d6e6fb`) 후 삭제. 로컬 feature 브랜치 4개(`feat-4-pdf-statement` `feat-5-logout` `feat-6-polar-billing` `feat-7-premium-report-fix`) 전부 main 포함을 확인하고 삭제했다. **원격에는 `origin/feat-4-pdf-statement`(main보다 2커밋 뒤처진 스테일)와 `origin/docs/finsight-mvp-planning`이 아직 남아 있다.**
 
 **검증 실측(2026-08-11 16:11 재실행):** `npm run typecheck` 통과 / `npm run test` **49 files, 412 tests 전부 통과** / `npm run lint` **0 errors, 2 warnings**(warning은 `eslint.config.mjs`·`postcss.config.mjs`의 기존 익명 default export). 이전에 보였던 716 errors / 7622 warnings는 `eslint.config.mjs` ignores에 `private/**`를 추가해 사라졌다 — 다만 디스크의 168M은 아직 남아 있다(ISSUES 1).
 
@@ -73,14 +73,13 @@ Polar 웹훅 → polar listen(로컬 터널) → POST /api/webhooks/polar
 우선순위 순.
 
 1. **`private/` 삭제** — 168M 빌드 산출물. lint는 ignore로 막았지만 디스크는 그대로다. `rm -rf`는 훅이 차단하므로 사용자가 `! rm -rf /Users/heonamsu/workspace/courses/finsight/private` 로 직접 실행.
-2. **main → origin push** — 26커밋 미푸시. 아직 사용자 요청 없음.
-3. **미머지 브랜치 정리** — `feat-7-premium-report-fix`(머지 완료, 삭제 가능), `feat-4-pdf-statement`, `feat-5-logout`(ISSUES 7).
-4. **QA MINOR 5건** — `code` 포맷 가드, `describeError`를 `src/lib/log.ts`로 승격, DB 레벨 `p_report_type` 화이트리스트, `Returns: boolean` nullable 불일치, 클라이언트 번들 재스캔.
-5. **리포트 요청 중복 제거** — step 3 로그에서 같은 `reportType`이 2~4회씩 재요청됐다(캐시 히트라 무해하나 불필요). 클라이언트가 진행 중/완료 요청을 dedupe하지 않는다. 경쟁 상태의 보조 방어선이기도 하다.
-6. **`provider.ts`에 `maxOutputTokens` 설정** — 출력 잘림 방어.
-7. **`CLAUDE.md` / `AGENTS.md` 스테일 문장 정리** — "이번 phase는 `subscriptions` 스키마만 준비하고 실제 체크아웃/웹훅은 후속 `polar-billing` phase에서" 괄호가 이제 거짓. `AGENTS.md`는 Codex에 주입되므로 다음 phase에서 오해를 유발.
-8. **웹훅 순서 역전 방어(QA M-2)** — `last_event_at` 가드 컬럼.
-9. **Playwright E2E 셋업 / Vercel 배포 + Polar 대시보드 웹훅 등록**(Format `Raw`, 이벤트 5종) → 이후 프로덕션 Polar 조직 생성·심사.
+2. **원격 스테일 브랜치 정리** — `origin/feat-4-pdf-statement`(내용은 main에 전부 포함됨), `origin/docs/finsight-mvp-planning`. 원격 삭제는 사용자 확인 후.
+3. **QA MINOR 5건** — `code` 포맷 가드, `describeError`를 `src/lib/log.ts`로 승격, DB 레벨 `p_report_type` 화이트리스트, `Returns: boolean` nullable 불일치, 클라이언트 번들 재스캔.
+4. **리포트 요청 중복 제거** — step 3 로그에서 같은 `reportType`이 2~4회씩 재요청됐다(캐시 히트라 무해하나 불필요). 클라이언트가 진행 중/완료 요청을 dedupe하지 않는다. 경쟁 상태의 보조 방어선이기도 하다.
+5. **`provider.ts`에 `maxOutputTokens` 설정** — 출력 잘림 방어.
+6. **`CLAUDE.md` / `AGENTS.md` 스테일 문장 정리** — "이번 phase는 `subscriptions` 스키마만 준비하고 실제 체크아웃/웹훅은 후속 `polar-billing` phase에서" 괄호가 이제 거짓. `AGENTS.md`는 Codex에 주입되므로 다음 phase에서 오해를 유발.
+7. **웹훅 순서 역전 방어(QA M-2)** — `last_event_at` 가드 컬럼.
+8. **Playwright E2E 셋업 / Vercel 배포 + Polar 대시보드 웹훅 등록**(Format `Raw`, 이벤트 5종) → 이후 프로덕션 Polar 조직 생성·심사.
 
 ---
 
@@ -162,7 +161,7 @@ step 3에서 **브라우저 → 라우트 → RPC 왕복은 실측 통과**했�
 
 **6. [낮음] 리포트 파서가 `every()`로 전부 또는 전무** — `anomaly-detection.ts:37`, `savings-suggestions.ts:35`. 항목 하나가 검증에 실패하면 리포트 전체를 버린다.
 
-**7. [낮음] 정리 안 된 브랜치 2개** — `feat-4-pdf-statement`, `feat-5-logout`. 이미 main에 반영된 내용일 가능성이 높으나 삭제되지 않았다. `feat-7-premium-report-fix`는 머지 완료(삭제 가능).
+**7. [정보, 해소] 브랜치 정리 완료** — 로컬 feature 브랜치 4개는 main 포함을 확인한 뒤 전부 삭제했다. 원격의 `origin/feat-4-pdf-statement`·`origin/docs/finsight-mvp-planning`만 스테일로 남아 있다(TODO 2).
 
 **8. [낮음] 스테일 문서** — `CLAUDE.md`/`AGENTS.md`의 "스키마만, 실제 연동은 후속 phase에서" 괄호가 거짓(`AGENTS.md`는 Codex 주입 대상이라 실질 위험).
 
