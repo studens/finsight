@@ -23,6 +23,8 @@ export default [
       "scripts/**",
       "phases/**",
       "_workspace/**",
+      // 세션 스크래치패드(빌드 산출물). 저장소 코드가 아니다.
+      "private/**",
       "next-env.d.ts",
     ],
   },
