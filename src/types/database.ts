@@ -70,7 +70,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      merge_premium_report: {
+        Args: {
+          p_analysis_id: string
+          p_report: Json
+          p_report_type: string
+          p_user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
