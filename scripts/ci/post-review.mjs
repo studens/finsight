@@ -24,6 +24,16 @@ if (!REPO) { console.error("GITHUB_REPOSITORY 가 없습니다"); process.exit(2
 const gh = (args, input) =>
   execFileSync("gh", args, { input, encoding: "utf8", maxBuffer: 32 * 1024 * 1024 });
 
+// --slurp 없이 --paginate 를 쓰면 페이지마다 별개의 JSON 배열이 이어져 나와 JSON.parse 가 던진다
+// (GitHub 기본 per_page=30 → 파일 31개부터). --slurp 이 전체를 한 배열로 감싸므로 flat() 으로 펼친다.
+//
+// ⚠️ 이 선언은 반드시 아래 "결과 읽기"보다 위에 있어야 한다. upsertSticky 는 호이스팅되는
+//    함수 선언이라 어디서든 호출되지만 본문에서 ghJson 을 쓴다 — 선언이 아래에 있으면
+//    리뷰 실패 경로(결과 파일 없음)에서 호출할 때 TDZ 로 죽는다.
+//    그 경로는 "이것은 문제 없음이 아니라 미검토입니다"를 알리는 유일한 통로이므로,
+//    거기서 죽으면 PR에 아무 설명도 남지 않은 채 job 만 빨간불이 된다(실측 재현).
+const ghJson = (path) => JSON.parse(gh(["api", "--paginate", "--slurp", path])).flat();
+
 // ── 결과 읽기 ────────────────────────────────────────────────────────────────
 let review;
 try { review = JSON.parse(readFileSync(jsonPath, "utf8")); }
@@ -45,9 +55,6 @@ const failed = Array.isArray(review.failedDimensions) ? review.failedDimensions 
 // ── diff에 존재하는 라인 집합 만들기 ─────────────────────────────────────────
 // PR files API의 patch에서 hunk 헤더(@@ -a,b +c,d @@)를 읽어 신규(RIGHT) 측 라인을 모은다.
 const validLines = new Map(); // path -> Set<line>
-// --slurp 없이 --paginate 를 쓰면 페이지마다 별개의 JSON 배열이 이어져 나와 JSON.parse 가 던진다
-// (GitHub 기본 per_page=30 → 파일 31개부터). --slurp 이 전체를 한 배열로 감싸므로 flat() 으로 펼친다.
-const ghJson = (path) => JSON.parse(gh(["api", "--paginate", "--slurp", path])).flat();
 
 for (const f of ghJson(`repos/${REPO}/pulls/${prNumber}/files`)) {
   if (!f.patch) continue;
