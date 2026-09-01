@@ -62,12 +62,21 @@ rm -f "$JSON" "$MD"
 # 스킬 1단계와 같은 규칙이지만, 브랜치를 추측하지 않고 주어진 BASE만 쓴다.
 # 리뷰 가치가 없는 경로는 제외하고, 제외했다는 사실은 프롬프트에 적어 보고에 남게 한다.
 EXCLUDE='^(package-lock\.json|_workspace/|phases/|\.next|node_modules/|.*\.(png|jpg|jpeg|gif|svg|ico|pdf|csv|lock)$)'
+
+# 시크릿 경로(`.env*`)는 .gitignore 로도 막지만 여기서 한 번 더 막는다 — 방어를 한 겹에만
+# 두면 .gitignore 가 느슨해지는 순간(과거 `.env*.local` 만 막던 시절) 시크릿 전문이
+# "Read 로 읽어라"는 프롬프트와 함께 LLM 세션과 review.md 로 나간다.
+# `.env.example` 은 값이 빈 템플릿이라 리뷰 대상으로 남긴다.
+# ERE 에는 부정 룩어헤드가 없으므로 정규식에 끼워넣지 않고 awk 로 basename 을 검사한다.
+drop_secret_paths() {
+  awk '{ b=$0; sub(/.*\//, "", b); if (b ~ /^\.env/ && b != ".env.example") next; print }'
+}
 # core.quotePath=false : 비ASCII 경로를 큰따옴표+8진 이스케이프로 내보내지 않게 한다.
 # 이스케이프된 경로가 프롬프트에 실리면 리뷰어의 Read/git diff가 실패하고, 그 차원은
 # "발견 0건"으로 보고된다 — 보지 않은 것을 봤다고 말하는, 이 하네스 최악의 실패다.
-TRACKED=$(git -c core.quotePath=false diff --name-only "$BASE_SHA"...HEAD 2>/dev/null | grep -vE "$EXCLUDE" || true)
+TRACKED=$(git -c core.quotePath=false diff --name-only "$BASE_SHA"...HEAD 2>/dev/null | grep -vE "$EXCLUDE" | drop_secret_paths || true)
 # 미추적(신규) 파일 — diff가 0바이트로 나오므로 Read로 읽어야 한다. CI에서는 보통 비어 있다.
-UNTRACKED=$(git -c core.quotePath=false ls-files --others --exclude-standard 2>/dev/null | grep -vE "$EXCLUDE" || true)
+UNTRACKED=$(git -c core.quotePath=false ls-files --others --exclude-standard 2>/dev/null | grep -vE "$EXCLUDE" | drop_secret_paths || true)
 
 N_TRACKED=$(printf '%s\n' "$TRACKED" | grep -c . || true)
 N_UNTRACKED=$(printf '%s\n' "$UNTRACKED" | grep -c . || true)

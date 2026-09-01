@@ -93,9 +93,17 @@ H=$(printf '%s\n' "$STAGED" | grep -E '(^|/)\.env' | grep -vE '\.(example|sample
 
 # ── 정적 검사: 스테이징된 TS 파일 lint + 프로젝트 타입체크 ────────────────────
 # 공백이 든 경로가 쪼개지지 않게 NUL 구분으로 넘긴다.
-LINT_TARGETS=$(printf '%s\n' "$STAGED" | grep -E "$TS" | while IFS= read -r f; do [ -f "$f" ] && printf '%s\0' "$f"; done)
-if [ -n "$LINT_TARGETS" ]; then
-  if ! OUT=$(printf '%s' "$LINT_TARGETS" | xargs -0 npx --no-install eslint 2>&1); then
+# ⚠️ NUL 구분 목록을 명령 치환($(...))에 담지 마라 — bash가 NUL을 삭제해
+#    "src/a.tssrc/b.ts" 처럼 붙어버리고, xargs -0 이 존재하지 않는 경로 하나를
+#    ESLint에 넘겨 파일이 2개 이상이면 항상 거짓 거부가 된다(파일 1개일 때만 우연히 동작).
+#    그래서 목록은 변수에 담지 말고 파이프로 직접 xargs 에 흘린다.
+lint_targets() {
+  printf '%s\n' "$STAGED" | grep -E "$TS" | while IFS= read -r f; do
+    [ -f "$f" ] && printf '%s\0' "$f"
+  done
+}
+if [ -n "$(lint_targets | tr -d '\0')" ]; then
+  if ! OUT=$(lint_targets | xargs -0 -r npx --no-install eslint 2>&1); then
     report LINT 'ESLint 실패' "$OUT"
   fi
   if ! OUT=$(npm run --silent typecheck 2>&1); then

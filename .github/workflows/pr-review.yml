@@ -70,9 +70,21 @@ jobs:
           # ⚠️ 여기서 제외하는 것은 "LLM을 쓸 가치가 없는 순수 문서 변경"뿐이다.
           #    `.github/` 와 `.claude/**/*.md`(스킬·차원 정의)는 절대 제외하지 않는다 —
           #    게이트 자신이나 리뷰 규칙을 바꾸는 PR이 리뷰 없이 초록으로 통과하기 때문이다.
-          #    (저장소 루트의 .md 만 제외한다: README, handoff 등)
-          FILES=$(git diff --name-only "$BASE_SHA"...HEAD \
-            | grep -vE '^(_workspace/|phases/|docs/|package-lock\.json$|[^/]*\.md$)' || true)
+          #    같은 이유로 CRITICAL 규칙 원본인 CLAUDE.md·AGENTS.md 도 제외하지 않는다.
+          #    이전 패턴 `[^/]*\.md$` 는 루트 .md 를 통째로 제외해 CLAUDE.md 만 바꾼 PR이
+          #    리뷰 없이 초록으로 통과했다 — 바로 위 주석이 막겠다고 선언한 그 구멍이었다.
+          #    제외 대상은 실제로 규칙과 무관한 README/handoff 로 한정한다.
+          #
+          # ⚠️ `|| true` 로 git 실패를 삼키지 마라. base.sha 가 unreachable 하면
+          #    git diff 가 죽는데, 그것을 "변경 0건"으로 뭉개면 게이트가 초록이 된다(fail-open).
+          #    git 실패와 "0건"은 분리해서, 실패는 job 을 떨어뜨린다.
+          if ! FILES=$(git diff --name-only "$BASE_SHA"...HEAD); then
+            echo "::error::git diff 실패 — base.sha($BASE_SHA)에 도달할 수 없습니다."
+            echo "::error::리뷰 대상을 판정하지 못했으므로 통과로 취급하지 않습니다."
+            exit 1
+          fi
+          FILES=$(printf '%s\n' "$FILES" \
+            | grep -vE '^(_workspace/|phases/|docs/|package-lock\.json$|(README|handoff)[^/]*\.md$)' || true)
           COUNT=$(printf '%s\n' "$FILES" | grep -c . || true)
           echo "count=$COUNT" >> "$GITHUB_OUTPUT"
           echo "리뷰 대상 코드 파일 $COUNT 개"
@@ -97,8 +109,9 @@ jobs:
         continue-on-error: true
         env:
           # 인증은 둘 중 하나만 있으면 된다(review-ci.sh 가 둘 다 없을 때만 exit 2).
-          # 둘 다 설정하면 claude CLI 가 OAuth 토큰을 우선하므로, API 키로 돌리려면
-          # CLAUDE_CODE_OAUTH_TOKEN 시크릿을 등록하지 않은 채로 둔다(미등록 시 빈 문자열).
+          # ⚠️ 둘 다 등록하지 말 것. 두 값이 동시에 있을 때 CLI 가 무엇을 고르는지는
+          # 검증하지 않았다 — 어느 쪽으로 과금될지 불확실해지므로 쓰려는 것만 등록하고
+          # 나머지는 gh secret delete 로 지운다(미등록 시 빈 문자열이 넘어간다).
           #
           # 1) 구독 연동 토큰 — `claude setup-token` 으로 발급. 종량 결제가 아니라 기존
           #    Claude 구독 사용량을 쓴다(CI가 구독 상한을 같이 소모한다는 뜻이기도 하다).

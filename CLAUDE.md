@@ -52,7 +52,7 @@ npm run test:e2e  # E2E 테스트 (Playwright, 아직 미설정)
 - `review-ci.sh` 는 **커밋된 변경(`git diff <base>...HEAD`) + 미추적 신규 파일**을 본다. 추적 중인 파일의 미커밋 수정은 보지 않는다 — 그건 대화에서 `/review` 를 쓴다. 로컬에서 직접 돌릴 때는 `npm run review -- --base <sha>`.
 - `REVIEW_CI=1` 환경변수가 `scripts/hooks/stop-check.sh` 의 검증 빌드를 건너뛰게 한다 — 리뷰 세션에서 lint/build/test를 중복 실행하지 않기 위함.
 - pre-push는 `CLAUDECODE` 가 설정돼 있으면 건너뛴다(Claude 세션 안에 세션이 생기는 것을 막는다). 수동 우회는 `SKIP_AI_REVIEW=1 git push`.
-- GitHub Action에는 Claude 인증 시크릿이 **둘 중 하나** 필요하다. `review-ci.sh` 는 둘 다 없을 때만 exit 2 로 죽고, 워크플로는 둘 다 env로 넘긴다. **둘 다 등록하면 CLI가 OAuth 토큰을 우선**하므로, API 키로 돌리려면 `CLAUDE_CODE_OAUTH_TOKEN` 을 등록하지 않은 채로 둔다.
+- GitHub Action에는 Claude 인증 시크릿이 **둘 중 하나** 필요하다. `review-ci.sh` 는 둘 다 없을 때만 exit 2 로 죽고, 워크플로는 둘 다 env로 넘긴다. **둘 다 등록하지 말 것** — 두 값이 동시에 있을 때 CLI가 무엇을 고르는지는 검증하지 않았고, 어느 쪽으로 과금될지 불확실해진다. 쓰려는 것만 등록하고 나머지는 `gh secret delete` 로 지운다.
   - `CLAUDE_CODE_OAUTH_TOKEN` — `claude setup-token` 으로 발급(Claude Pro/Max 구독 필요) → `gh secret set CLAUDE_CODE_OAUTH_TOKEN`. 종량 결제가 아니라 **구독 상한을 CI가 같이 소모한다**.
   - `ANTHROPIC_API_KEY` — Anthropic Console API 키 → `gh secret set ANTHROPIC_API_KEY`. **PR 리뷰마다 그 키가 속한 계정에 종량 과금**되고, `REVIEW_MODEL: opus` 라 PR 하나당 비용이 작지 않다.
 - required status check 로 지정할 이름은 job id(`checks`/`ai-review`)가 **아니라** job의 `name:` 값이다 — **`typecheck · lint · build · test`** 와 **`AI 코드 리뷰`**. job id로 지정하면 영영 보고되지 않는 체크가 되어 모든 PR이 머지 불가가 된다. classic 브랜치 보호는 최근 7일 내 실행된 체크만 목록에 띄우므로, 지정 전에 PR을 한 번 돌려야 한다(ruleset은 이름 직접 입력 가능).
