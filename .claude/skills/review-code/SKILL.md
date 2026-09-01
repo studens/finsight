@@ -27,6 +27,8 @@ description: "finsight의 변경 사항을 차원별 서브에이전트로 병�
 
 ## 1단계 — 리뷰 대상 확정
 
+> **CI 모드로 호출됐다면** 이 단계의 자동 판정을 하지 않는다. BASE와 파일 목록을 프롬프트로 이미 받았으므로 아래 아무 것도 실행하지 말고 [## CI 모드](#ci-모드)로 가라.
+
 인자가 있으면 그것을 따르고(`/review-code src/services/llm`, `/review-code --staged`), 없으면 아래로 자동 판정한다.
 
 ```bash
@@ -183,9 +185,61 @@ fi
 
 ### 파일 저장
 
-두 산출물을 함께 `_workspace/review_{브랜치}_{YYYY-MM-DD}.md` 로 저장한다(B를 위에, A를 아래에). `qa` 에이전트가 `_workspace/qa_code_review_{phase}.md` 를 쓰는 기존 관례와 같은 자리다. 저장 경로를 사용자에게 알린다.
+두 산출물을 함께 `_workspace/review_{브랜치}_{YYYY-MM-DD}.md` 로 저장한다(B를 위에, A를 아래에). **CI 모드에서는 이 경로가 아니라 프롬프트가 지정한 마크다운 경로에 쓴다.** `qa` 에이전트가 `_workspace/qa_code_review_{phase}.md` 를 쓰는 기존 관례와 같은 자리다. 저장 경로를 사용자에게 알린다.
 
 터미널에는 **B 전문 + A 중 critical/major만** 출력하고, minor/nit 인라인 코멘트는 저장 파일에서 보라고 안내한다.
+
+---
+
+## CI 모드
+
+`scripts/review-ci.sh` 가 `claude --print` 로 호출하는 경로다. **사람이 없다** — 질문하지 말고, 확인을 구하지 말고, 끝까지 진행한 뒤 파일 두 개를 남긴다.
+
+기본 모드와 다른 점만 적는다. 나머지(차원 선택·fan-out·취합·심각도 기준)는 전부 그대로다.
+
+| | 기본 | CI 모드 |
+|---|---|---|
+| 1단계 대상 판정 | git으로 자동 판정 | **하지 않는다.** BASE·변경 파일·신규 파일을 프롬프트로 받는다 |
+| typecheck/lint/build/test | 메인이 한 번 실행 | **실행하지 않는다.** CI의 별도 job이 담당한다 |
+| 40개 초과 시 | 사용자에게 물어봄 | 물어볼 사람이 없다. `review-ci.sh`가 미리 걸러서 여기까지 오지 않는다 |
+| 출력 | 대화창 + `_workspace/` | 프롬프트가 지정한 **JSON 1개 + 마크다운 1개** |
+| 종료 | 대화 계속 | 두 파일을 Write로 남기고 끝. 파일이 없으면 실행 실패로 처리된다 |
+
+### 산출물 1 — JSON (기계용)
+
+`--deep` 워크플로우(`.claude/workflows/review-code.js`)의 반환값과 **같은 스키마**를 쓴다. 두 모드가 같은 형태를 내보내야 래퍼 스크립트가 하나로 유지된다.
+
+```jsonc
+{
+  "base": "커밋해시",
+  "prVerdict": "Approve | Changes Requested | Blocked",  // 5단계 판정 규칙 그대로
+  "counts": { "critical": 0, "major": 0, "minor": 0, "nit": 0 },  // confirmed 기준 실제 집계
+  "filesReviewed": 0, "untrackedReviewed": 0,
+  "dimensions": ["security-privacy", "correctness", "architecture"],
+  "confirmed": [                       // 취합을 끝낸 지적. 심각도순(critical→nit) 정렬 필수
+    { "severity": "major", "dimension": "security-privacy",
+      "title": "한 줄 제목", "tldr": "무엇이 왜 문제인지 한 문장",
+      "good": "이 코드에서 옳게 한 점. 없으면 \"해당 없음\"",
+      "file": "src/...", "line": 37,
+      "problem": "한두 문장", "evidence": "재현 시나리오 또는 위반 규칙 인용",
+      "fix": "수정 코드 조각 또는 한 줄 지시",
+      "confidence": "높음 | 중간 | 낮음" }
+  ],
+  "refuted": [],                       // 취합 2단계에서 오탐으로 판정해 뺀 것
+  "unverifiedCount": 0,
+  "emptyDimensions": [],               // 검토했고 발견이 0건인 차원
+  "failedDimensions": [],              // 리뷰어가 죽어 검토 자체가 안 된 차원 ← 0건과 다르다
+  "excluded": ["package-lock.json"]    // 대상에서 뺀 경로. 조용히 줄이지 않기 위한 필드
+}
+```
+
+**`failedDimensions` 가 이 파일의 존재 이유다.** 래퍼는 이 배열이 비어 있지 않으면 종료 코드 2(리뷰 미완료)를 내보내 머지를 막는다. 리뷰어가 죽은 것을 "발견 0건"으로 적으면 그 안전장치가 무력화된다 — 죽은 차원은 반드시 여기 넣고, `counts`에서 빼고, `prVerdict`를 `Approve`로 쓰지 마라.
+
+`counts`는 반드시 `confirmed` 배열을 실제로 센 값이어야 한다. 눈대중으로 적지 마라 — 래퍼가 이 숫자로 종료 코드를 정한다.
+
+### 산출물 2 — 마크다운 (사람용)
+
+5단계 산출물 B를 위에, A를 아래에. PR 코멘트로 그대로 게시되므로 대화체 인사말·"리뷰를 시작합니다" 같은 진행 상황 서술을 넣지 않는다. 맨 아래에 제외한 경로를 한 줄로 남긴다.
 
 ---
 
