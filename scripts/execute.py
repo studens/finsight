@@ -147,7 +147,17 @@ class StepExecutor:
             if r.returncode == 0:
                 print(f"  Commit: {msg}")
             else:
-                print(f"  WARN: 코드 커밋 실패: {r.stderr.strip()}")
+                # pre-commit 훅(scripts/githooks/pre-commit)이 CRITICAL 규칙 위반·lint·타입
+                # 에러로 커밋을 거부할 수 있다. 여기서 WARN만 남기고 계속 가면 코드가
+                # 커밋되지 않은 채 _finalize()가 phase를 completed로 기록하고, 푸시할
+                # 커밋이 없으므로 git push까지 성공해 버린다 — 성공한 것처럼 보이는 실패다.
+                print(f"\n  ERROR: 코드 커밋이 거부되었습니다 — phase를 중단합니다.")
+                print(f"  step {step_num} 의 코드가 커밋되지 않았습니다. 아래 지적을 고치고 재실행하세요.")
+                if r.stdout.strip():
+                    print(r.stdout.strip())
+                if r.stderr.strip():
+                    print(r.stderr.strip())
+                sys.exit(1)
 
         self._run_git("add", "-A")
         if self._run_git("diff", "--cached", "--quiet").returncode != 0:

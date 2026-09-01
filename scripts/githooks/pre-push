@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# pre-push — LLM 코드 리뷰를 돌려 결과를 보여주지만 **push를 막지는 않는다**.
+#
+# 왜 경고만 하는가: 리뷰는 몇 분이 걸리고 판정이 확률적이다. 여기서 막으면
+# `--no-verify`가 습관이 되어 훅 전체가 죽는다. 진짜 게이트는 PR의 GitHub Action이고,
+# 그건 우회할 수 없다. 이 훅은 "PR 올리기 전에 미리 보기"다.
+#
+# 건너뛰기: SKIP_AI_REVIEW=1 git push
+set -uo pipefail
+
+# Claude Code 세션 안에서 커밋·push가 일어나면 세션 안에 세션이 생긴다 — 건너뛴다.
+[ -n "${CLAUDECODE:-}" ] && exit 0
+[ -n "${SKIP_AI_REVIEW:-}" ] && exit 0
+[ -n "${CI:-}" ] && exit 0
+
+ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+cd "$ROOT" || exit 0
+[ -x "$ROOT/scripts/review-ci.sh" ] || exit 0
+command -v claude >/dev/null || exit 0
+
+# base = origin/main 과의 분기점. origin/main이 없으면(첫 push 등) 조용히 넘어간다.
+git rev-parse --verify --quiet origin/main >/dev/null || exit 0
+BASE=$(git merge-base origin/main HEAD 2>/dev/null) || exit 0
+[ "$BASE" = "$(git rev-parse HEAD)" ] && exit 0   # 새 커밋이 없음
+
+echo "▶ push 전 코드 리뷰를 실행합니다 (몇 분 걸립니다 · 건너뛰려면 SKIP_AI_REVIEW=1 git push)"
+
+set +e
+"$ROOT/scripts/review-ci.sh" --base "$BASE" --out "_workspace/review-prepush"
+STATUS=$?
+set -e
+
+MD="_workspace/review-prepush/review.md"
+case "$STATUS" in
+  0) echo "✓ 리뷰 통과 — critical/major 없음" ;;
+  1) printf '\n\033[33m⚠ 조치가 필요한 지적이 있습니다.\033[0m 전문: %s\n' "$MD"
+     [ -s "$MD" ] && sed -n '1,40p' "$MD" ;;
+  *) printf '\n\033[33m⚠ 리뷰를 완료하지 못했습니다.\033[0m 로그: _workspace/review-prepush/session.log\n' ;;
+esac
+
+# 어떤 경우에도 push는 막지 않는다. 게이트는 PR의 GitHub Action이다.
+exit 0

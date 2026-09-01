@@ -6,7 +6,9 @@
     "build": "next build",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "prepare": "git config core.hooksPath scripts/githooks || true",
+    "review": "bash scripts/review-ci.sh"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.16",

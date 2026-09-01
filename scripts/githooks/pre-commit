@@ -1,0 +1,120 @@
+#!/usr/bin/env bash
+# pre-commit — 값싼 결정적 검사만 수행한다.
+#
+# 여기에 LLM 코드 리뷰를 넣지 않는다. 리뷰는 몇 분이 걸리고 판정이 확률적이라
+# 커밋을 막는 자리에 맞지 않는다. LLM 리뷰는 pre-push(경고)와
+# GitHub Action(PR 게이트)이 담당한다.
+#
+# 이 훅이 막는 것은 CLAUDE.md의 CRITICAL 규칙 중 grep으로 확실히 판정되는 것들뿐이다.
+# 오탐이 나면 규칙이 잘못된 것이므로 ALLOW 목록을 고쳐라 — --no-verify를 습관으로 만들지 마라.
+set -uo pipefail
+
+ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+cd "$ROOT" || exit 0
+
+# 프로젝트가 아직 스캐폴딩되지 않았으면 검사할 대상이 없다 (stop-check.sh와 동일한 부트스트랩 예외).
+[ -f "$ROOT/package.json" ] || exit 0
+
+# ⚠️ 경로는 NUL 구분으로 읽는다. --name-only 는 비ASCII 경로를 큰따옴표+8진 이스케이프로
+#    내보내고, 그 문자열로 `git show ":$f"` 를 호출하면 실패한다. grep 실패는 아래에서
+#    `|| true` 로 흡수되므로 검사가 "위반 없음"으로 조용히 통과해 버린다.
+#    개행이 든 경로만 표현할 수 없는데, 그건 git 자체가 사실상 금지한다.
+STAGED=$(git diff --cached -z --name-only --diff-filter=ACMR | tr '\0' '\n')
+[ -n "$STAGED" ] || exit 0
+
+FAIL=0
+report() { # report <규칙ID> <메시지> <파일:라인 목록>
+  printf '\n\033[31m✗ %s\033[0m  %s\n' "$1" "$2"
+  printf '%s\n' "$3" | sed 's/^/    /'
+  FAIL=1
+}
+
+# 스테이징된 내용(작업 트리가 아니라 인덱스)을 본다 — 커밋되는 것이 검사 대상이다.
+staged_content() { git show ":$1" 2>/dev/null; }
+
+# grep_rule <정규식> <파일 필터 정규식> <제외 정규식|""> → "파일:라인:내용" 목록을 stdout으로
+grep_rule() {
+  local pattern="$1" include="$2" exclude="$3" f hits
+  while IFS= read -r f; do
+    [ -n "$f" ] || continue
+    printf '%s' "$f" | grep -qE "$include" || continue
+    [ -n "$exclude" ] && printf '%s' "$f" | grep -qE "$exclude" && continue
+    hits=$(staged_content "$f" | grep -nE "$pattern" || true)
+    [ -n "$hits" ] && printf '%s\n' "$hits" | sed "s|^|$f:|"
+  done <<< "$STAGED"
+}
+
+TS='\.(ts|tsx|js|jsx|mjs)$'
+TESTS='(\.test\.|\.spec\.|__tests__/|__fixtures__/)'
+
+# ── SEC01: service-role 키에 NEXT_PUBLIC_ 접두어 ──────────────────────────────
+# CLAUDE.md: "NEXT_PUBLIC_ 접두어를 붙이지 않는다" — 붙으면 브라우저 번들에 그대로 실린다.
+H=$(grep_rule 'NEXT_PUBLIC_[A-Za-z0-9_]*SERVICE_ROLE' '.' '')
+[ -n "$H" ] && report SEC01 'service-role 키에 NEXT_PUBLIC_ 접두어가 붙었다 — 브라우저에 노출된다' "$H"
+
+# ── SEC02: service-role 키를 허용 위치 밖에서 참조 ────────────────────────────
+# 허용: src/lib/supabase/(래퍼), src/app/api/(서버 전용 라우트), src/services/
+H=$(grep_rule 'SUPABASE_SERVICE_ROLE_KEY' "$TS" '^(src/lib/supabase/|src/app/api/|src/services/)')
+[ -n "$H" ] && report SEC02 'service-role 키를 서버 전용 경로 밖에서 참조한다 (허용: src/lib/supabase, src/app/api, src/services)' "$H"
+
+# ── SEC03: 클라이언트 컴포넌트에서 service-role 참조 ──────────────────────────
+H=""
+while IFS= read -r f; do
+  [ -n "$f" ] || continue
+  printf '%s' "$f" | grep -qE "$TS" || continue
+  C=$(staged_content "$f")
+  printf '%s' "$C" | grep -qE '^[[:space:]]*["'"'"']use client["'"'"']' || continue
+  L=$(printf '%s' "$C" | grep -nE 'SERVICE_ROLE|serviceRole' || true)
+  [ -n "$L" ] && H="$H$(printf '%s\n' "$L" | sed "s|^|$f:|")"$'\n'
+done <<< "$STAGED"
+[ -n "${H//[$'\n']/}" ] && report SEC03 "'use client' 파일이 service-role 키를 참조한다" "$H"
+
+# ── SEC04: src/ 안에서 디스크 쓰기 ────────────────────────────────────────────
+# CLAUDE.md: "원본 CSV 파일은 어떤 형태로도(Storage, 디스크, 로그 등) 영구 저장하지 않는다"
+H=$(grep_rule '(writeFileSync|writeFile\(|appendFileSync|createWriteStream)' "^src/.*$TS" "$TESTS")
+[ -n "$H" ] && report SEC04 'src/ 에서 디스크 쓰기를 한다 — 원본 파일 영구 저장 금지 규칙 위반 가능' "$H"
+
+# ── SEC05: supabase-js 를 래퍼 밖에서 직접 import ─────────────────────────────
+# CLAUDE.md: 외부 API 호출은 services/ 경유, Supabase 클라이언트는 src/lib/supabase/ 래퍼 경유
+H=$(grep_rule 'from ["'"'"']@supabase/supabase-js["'"'"']' "$TS" '^(src/lib/supabase/|src/services/)')
+[ -n "$H" ] && report SEC05 '@supabase/supabase-js 를 래퍼 밖에서 직접 import 한다 (허용: src/lib/supabase, src/services)' "$H"
+
+# ── ARCH01: 외부 SDK 를 services/ 밖에서 import ───────────────────────────────
+H=$(grep_rule 'from ["'"'"'](@ai-sdk/|@polar-sh/sdk)' "$TS" '^src/services/')
+[ -n "$H" ] && report ARCH01 '외부 API SDK 를 src/services/ 밖에서 import 한다' "$H"
+
+# ── SEC06: 시크릿 리터럴 ──────────────────────────────────────────────────────
+H=$(grep_rule '(sk-ant-api[0-9]|-----BEGIN [A-Z ]*PRIVATE KEY|polar_(oat|pat)_[A-Za-z0-9]{16})' '.' "$TESTS")
+[ -n "$H" ] && report SEC06 '시크릿으로 보이는 리터럴이 포함됐다' "$H"
+
+# ── SEC07: .env 파일 커밋 ─────────────────────────────────────────────────────
+H=$(printf '%s\n' "$STAGED" | grep -E '(^|/)\.env' | grep -vE '\.(example|sample|template)$' || true)
+[ -n "$H" ] && report SEC07 '.env 파일을 커밋하려 한다' "$H"
+
+# ── 정적 검사: 스테이징된 TS 파일 lint + 프로젝트 타입체크 ────────────────────
+# 공백이 든 경로가 쪼개지지 않게 NUL 구분으로 넘긴다.
+LINT_TARGETS=$(printf '%s\n' "$STAGED" | grep -E "$TS" | while IFS= read -r f; do [ -f "$f" ] && printf '%s\0' "$f"; done)
+if [ -n "$LINT_TARGETS" ]; then
+  if ! OUT=$(printf '%s' "$LINT_TARGETS" | xargs -0 npx --no-install eslint 2>&1); then
+    report LINT 'ESLint 실패' "$OUT"
+  fi
+  if ! OUT=$(npm run --silent typecheck 2>&1); then
+    report TYPE 'tsc --noEmit 실패' "$OUT"
+  fi
+fi
+
+if [ "$FAIL" -ne 0 ]; then
+  cat >&2 <<'MSG'
+
+──────────────────────────────────────────────────────────────
+커밋이 중단됐습니다. 위 항목을 고친 뒤 다시 커밋하세요.
+
+  · 규칙이 오탐이라면 scripts/githooks/pre-commit 의 허용 목록을 고치세요.
+  · 정말 의도한 커밋이면 `git commit --no-verify` 로 넘길 수 있습니다.
+  · 이 훅은 LLM 리뷰를 하지 않습니다 — 그건 push 시점과 PR에서 돕니다.
+──────────────────────────────────────────────────────────────
+MSG
+  exit 1
+fi
+
+exit 0
