@@ -4,7 +4,11 @@ node_modules/
 out/
 next-env.d.ts
 tsconfig.tsbuildinfo
-.env*.local
+# `.env*.local` 만 무시하면 평문 `.env`·`.env.production` 이 미추적 파일로 남아
+# pre-push 리뷰의 `ls-files --others` 에 잡히고, "파일 전문을 Read 하라"는 프롬프트와
+# 함께 시크릿이 LLM 세션과 review.md 로 나간다. `.env*` 전체를 막고 예시만 되살린다.
+.env*
+!.env.example
 
 # phase execution outputs
 phases/**/phase*-output.json
@@ -15,3 +19,7 @@ phases/**/step*-output.json
 
 # 세션 스크래치패드가 실수로 저장소 루트에 생긴 경우 (빌드 산출물)
 private/
+
+# 코드 리뷰 하네스 산출물 (scripts/review-ci.sh — 실행마다 새로 만들어진다)
+_workspace/review-ci/
+_workspace/review-prepush/

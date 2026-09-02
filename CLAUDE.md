@@ -32,6 +32,41 @@ npm run lint      # ESLint
 npm run test      # 테스트 (Vitest)
 npm run test:e2e  # E2E 테스트 (Playwright, 아직 미설정)
 
+## 하네스: 자동 코드 리뷰 (3층)
+
+`review-code` 스킬을 사람이 부르지 않아도 돌게 만든 구조다. 리뷰 규칙 자체는 전부 `.claude/skills/review-code/` 에 있고, 아래 3층은 **그 스킬을 언제·어떻게 호출하는지**만 정한다.
+
+| 층 | 언제 | 무엇을 | 막나 |
+|---|---|---|---|
+| `scripts/githooks/pre-commit` | 커밋마다 | 스테이징 파일의 CRITICAL 규칙 grep 검사(SEC01~07, ARCH01) + ESLint + tsc. **LLM 없음** | **예** (초 단위·결정적) |
+| `scripts/githooks/pre-push` | push 전 | `review-ci.sh` 로 LLM 리뷰 → 요약 출력 | **아니오** (경고만) |
+| `.github/workflows/pr-review.yml` | PR 열림/갱신 | `checks` job(락파일 레지스트리 검사 + typecheck/lint/build/test + pytest) + `ai-review` job(LLM 리뷰 → PR 코멘트) | **예** (required check) |
+
+**왜 pre-commit에 LLM 리뷰를 넣지 않았나:** 리뷰는 분 단위이고 판정이 확률적이다. 커밋을 막으면 `--no-verify`가 습관이 되어 훅 전체가 죽는다. 커밋은 발표가 아니라 저장 지점이다. 진짜 게이트는 우회할 수 없는 PR Action에 둔다.
+
+**설치:** `npm install` 이 `prepare` 스크립트로 `core.hooksPath=scripts/githooks` 를 설정한다. 새 클론·새 워크트리에서 한 번 필요하다.
+
+**공용 진입점** `scripts/review-ci.sh --base <sha> [--out <dir>] [--deep]` — 스킬을 `claude --print` 로 돌려 `<out>/review.json`(기계용) + `<out>/review.md`(사람용)를 남긴다. 종료 코드: `0` Approve · `1` critical/major 있음 · `2` **리뷰 미완료**(실행 실패, JSON 없음, 미검토 차원 존재).
+
+- CRITICAL: 종료 코드 `2`를 통과로 취급하지 않는다. 스킬의 제1원칙("검토 안 됨을 문제 없음으로 바꾸지 않는다")이 코드로 표현된 지점이다.
+- `review-ci.sh` 는 **커밋된 변경(`git diff <base>...HEAD`) + 미추적 신규 파일**을 본다. 추적 중인 파일의 미커밋 수정은 보지 않는다 — 그건 대화에서 `/review` 를 쓴다. 로컬에서 직접 돌릴 때는 `npm run review -- --base <sha>`.
+- `REVIEW_CI=1` 환경변수가 `scripts/hooks/stop-check.sh` 의 검증 빌드를 건너뛰게 한다 — 리뷰 세션에서 lint/build/test를 중복 실행하지 않기 위함.
+- pre-push는 `CLAUDECODE` 가 설정돼 있으면 건너뛴다(Claude 세션 안에 세션이 생기는 것을 막는다). 수동 우회는 `SKIP_AI_REVIEW=1 git push`.
+- GitHub Action에는 Claude 인증 시크릿이 **둘 중 하나** 필요하다. `review-ci.sh` 는 둘 다 없을 때만 exit 2 로 죽고, 워크플로는 둘 다 env로 넘긴다. **둘 다 등록하지 말 것** — 두 값이 동시에 있을 때 CLI가 무엇을 고르는지는 검증하지 않았고, 어느 쪽으로 과금될지 불확실해진다. 쓰려는 것만 등록하고 나머지는 `gh secret delete` 로 지운다.
+  - `CLAUDE_CODE_OAUTH_TOKEN` — `claude setup-token` 으로 발급(Claude Pro/Max 구독 필요) → `gh secret set CLAUDE_CODE_OAUTH_TOKEN`. 종량 결제가 아니라 **구독 상한을 CI가 같이 소모한다**.
+  - `ANTHROPIC_API_KEY` — Anthropic Console API 키 → `gh secret set ANTHROPIC_API_KEY`. **PR 리뷰마다 그 키가 속한 계정에 종량 과금**되고, `REVIEW_MODEL: opus` 라 PR 하나당 비용이 작지 않다.
+- required status check 로 지정할 이름은 job id(`checks`/`ai-review`)가 **아니라** job의 `name:` 값이다 — **`typecheck · lint · build · test`** 와 **`AI 코드 리뷰`**. job id로 지정하면 영영 보고되지 않는 체크가 되어 모든 PR이 머지 불가가 된다. classic 브랜치 보호는 최근 7일 내 실행된 체크만 목록에 띄우므로, 지정 전에 PR을 한 번 돌려야 한다(ruleset은 이름 직접 입력 가능).
+- CRITICAL: `execute.py`의 코드 커밋은 pre-commit 훅을 거친다. 훅이 거부하면 `_commit_step`이 `CommitRejected`를 던지고 호출부가 phase를 **중단**한다(이전엔 WARN만 남기고 계속 진행해, 코드가 커밋되지 않은 채 phase가 completed로 기록되고 push까지 성공했다). 이때 호출부는 그 step의 `completed`를 **`pending`으로 되돌린다** — 되돌리지 않으면 재실행이 그 step을 건너뛰고 다음 step부터 시작해, 커밋되지 않은 코드가 다음 step의 커밋 메시지로 들어간다. Codex가 만든 코드에서 lint/타입 에러나 CRITICAL 규칙 위반이 나면 그 step부터 다시 실행해야 한다.
+- 남은 위험(의도적으로 감수): 리뷰 세션은 PR이 통제하는 내용(diff·SKILL.md)을 읽으면서 Bash를 쓸 수 있다. 반출 대상에 `CLAUDE_CODE_OAUTH_TOKEN` 또는 `ANTHROPIC_API_KEY` 가 포함된다. 남은 완화책은 fork PR 리뷰 미실행 · 리뷰 스텝에 `GITHUB_TOKEN` 미주입(`persist-credentials: false`) · `WebFetch`/`WebSearch` 차단 · 기존 `dangerous-command-guard.sh`.
+- **2026-09-01 저장소가 public으로 전환됐다**(required status check 가 Free 플랜 private 저장소에서 막혀 있었다 — GitHub이 제시한 선택지는 "Pro 구독" 또는 "public 전환" 둘뿐이었다). 그래서 위 완화책 중 **"private 저장소"는 더 이상 없다.** 다만 `pr-review.yml` 의 `head.repo.full_name == github.repository` 검사가 fork PR에서 `ai-review` job 자체를 실행하지 않으므로, 인젝션 표면은 **이 저장소에 push 권한이 있는 사람이 올린 PR**로 한정된다. 외부 컨트리뷰터를 실제로 받는 순간 이 가정이 깨지므로 그때는 Bash를 화이트리스트로 좁혀야 한다.
+  - public 전환 시점에 히스토리 162커밋을 전수 검사했다: 토큰 패턴 0건, `.env.example` 은 값이 전부 빈칸, `handoff.local-backup.md` 는 `feat-8` 브랜치(미푸시)에만 존재. GitHub secret scanning 경보도 0건.
+  - 같은 날 `secret_scanning` 과 `secret_scanning_push_protection` 을 켰다(public 저장소는 무료). 실수로 키를 커밋하면 push 단계에서 차단된다.
+  - `checks` job에는 fork 가드가 없어 외부 fork PR에서도 돈다. 시크릿 미전달·읽기 전용 토큰이라 피해는 러너로 한정되지만 `npm ci` 가 남의 postinstall 을 실행할 수는 있다.
+- `checks` job의 `name:` 값은 **바꾸지 마라** — required status check가 그 문자열로 지정돼 있어, 이름을 바꾸면 지정된 체크가 영영 보고되지 않고 모든 PR이 머지 불가가 된다. 스텝을 추가할 때도 이름은 `typecheck · lint · build · test` 그대로 둔다(그래서 이름이 실제 스텝 목록보다 짧다).
+- `package-lock.json`은 LLM 리뷰 대상이 아니다(diff가 거대하고 판정이 확률적이다). 대신 `checks` job이 `npm ci` **앞에서** 모든 `resolved`가 `registry.npmjs.org`인지 결정적으로 검사한다. 락파일만 바꾼 PR이 `ai-review`를 건너뛰고 초록이 되는 구멍을 이 검사가 막는다.
+- `docs/`는 scope 제외 목록에 넣지 않는다 — `execute.py`의 `_load_guardrails()`가 `docs/*.md`를 통째로 읽어 Codex 프롬프트의 가드레일로 넣으므로, `ADR.md`·`ARCHITECTURE.md` 변경은 문서 수정이 아니라 구현 규칙 변경이다.
+- 알려진 공백: (1) 하네스 자체(종료 코드 2 판정, hunk 라인 파서)에 유닛 테스트가 없다. `execute.py`의 커밋 거부 경로는 `scripts/test_execute.py`가 덮고 CI의 pytest 스텝이 실행하지만, `review-ci.sh`·`post-review.mjs`는 여전히 테스트가 없다. (2) pre-commit의 grep 규칙은 인덱스를, ESLint/tsc는 작업 트리를 검사하므로 부분 스테이징에서 판정이 갈릴 수 있다. (3) `SEC04`는 CLAUDE.md의 3개 저장 경로 중 디스크만 막고 Storage 업로드·로그는 검사하지 않는다.
+
 ## 하네스: finsight MVP 계획·실행 오케스트레이션
 
 **역할 분담:** 실제 코드 구현은 `scripts/execute.py` + Codex CLI가 담당한다(`phases/{phase}/index.json` + `step{N}.md` 순차 실행). Claude Code 에이전트 팀(db-schema/core-services/api-routes/frontend/qa)은 코드를 직접 작성하지 않고, **execute.py가 실행할 phase/step 계획을 세우고, QA로 검증하고, execute.py 실행을 트리거·모니터링**한다.
@@ -44,3 +79,5 @@ npm run test:e2e  # E2E 테스트 (Playwright, 아직 미설정)
 | 2026-07-20 | 초기 구성 (db-schema/core-services/api-routes/frontend/qa 5인 팀 + 4개 스킬 + finsight-build 오케스트레이터, 팀이 코드 직접 구현) | 전체 | 코드 구현 전 설계 문서(PRD/ARCHITECTURE/ADR)가 명확한 역할 경계를 이미 갖고 있어, 그 경계를 그대로 에이전트 분리 기준으로 사용 |
 | 2026-07-20 | 상태를 "보류/참고용"으로 변경, 자동 트리거 비활성화 | CLAUDE.md 포인터 | 실제 구현 경로로 `scripts/execute.py`(Codex) 채택 확정 — 두 실행 경로 혼동 방지 |
 | 2026-07-20 | 아키텍처 전면 변경: 5개 에이전트를 "코드 구현"에서 "phase/step 계획 작성"으로 재정의, qa는 계획 검증+실행 후 코드 검증 겸임, `phase-planning` 스킬 신규 추가(execute.py 스키마), 오케스트레이터가 계획 확정 후 사용자 확인을 받아 `execute.py`를 직접 실행하도록 재작성 | 전체 (agents 5개, phase-planning 스킬 신규, finsight-build 재작성) | Claude 팀은 계획·검증, Codex는 실제 구현을 맡는 역할 분담으로 확정 |
+| 2026-08-31 | 자동 코드 리뷰 3층 추가 (pre-commit 규칙 훅 / pre-push 경고 / PR GitHub Action), `review-code` 스킬에 CI 모드(JSON 계약) 신설 | scripts/githooks, scripts/review-ci.sh, scripts/ci/post-review.mjs, .github/workflows/pr-review.yml, review-code SKILL.md | 리뷰를 사람이 부를 때만 도는 상태에서 자동 게이트로 전환. LLM 리뷰는 확률적이므로 커밋이 아니라 PR을 막게 배치 |
+| 2026-09-02 | 첫 PR 리뷰가 낸 지적 반영: `_commit_step` 이 `sys.exit` 대신 `CommitRejected` 를 던지고 호출부가 step 상태를 되돌림(+테스트 6개), `checks` job 에 락파일 레지스트리 검사·pytest 추가, scope 제외에서 `docs/` 제거 | scripts/execute.py, scripts/test_execute.py, .github/workflows/pr-review.yml | 게이트를 초록으로 만드는 구멍 3개(재실행이 step 건너뜀 · 락파일 무검토 · 파이썬 테스트 미실행)를 막음 |

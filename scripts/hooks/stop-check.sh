@@ -7,6 +7,13 @@
 
 cat >/dev/null  # stdin의 hook JSON payload는 사용하지 않음
 
+# scripts/review-ci.sh 가 띄운 리뷰 전용 헤드리스 세션에서는 검증 빌드를 돌리지 않는다.
+# 리뷰는 읽기 전용이고, lint/build/test는 CI의 별도 job(또는 로컬 pre-commit)이 담당한다.
+if [ -n "${REVIEW_CI:-}" ]; then
+  echo '{"continue": true}'
+  exit 0
+fi
+
 # 프로젝트가 아직 스캐폴딩되지 않았으면(package.json 없음) 검사를 건너뛴다.
 # tdd-guard.sh와 동일한 부트스트랩 예외.
 ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)

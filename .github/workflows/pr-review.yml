@@ -1,0 +1,184 @@
+name: PR Review
+
+# 결정적 검사(checks)와 LLM 코드 리뷰(ai-review)를 병렬로 돌린다.
+# 두 job 모두 required status check 로 지정해야 실제 머지 게이트가 된다
+# (Settings → Branches → main → Require status checks to pass).
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+concurrency:
+  # 같은 PR에 새 push가 오면 이전 실행을 취소한다 — LLM 리뷰를 중복 결제하지 않는다.
+  group: pr-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+# 최소 권한: 코멘트를 쓰는 ai-review 에만 pull-requests: write 를 준다.
+# checks 는 npm ci 로 서드파티 코드를 실행하므로 읽기 권한만 갖는다.
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: typecheck · lint · build · test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      # npm ci 앞에 둔다: 이 검사가 막으려는 것이 "npm ci 가 무엇을 설치하는가"이므로
+      # 설치 뒤에 확인하면 서드파티 postinstall 이 이미 실행된 뒤다.
+      # package-lock.json 은 LLM 리뷰 대상에서 제외돼 있다(diff 가 거대하고 판정이
+      # 확률적이라 값이 없다). 그래서 락파일만 바꾼 PR은 ai-review 를 건너뛰고 초록이
+      # 된다 — 그 구멍을 여기서 결정적으로 막는다.
+      - name: 락파일 레지스트리 검사
+        run: |
+          BAD=$(grep -oE '"resolved": *"[^"]+"' package-lock.json \
+            | grep -vE '"resolved": *"https://registry\.npmjs\.org/' || true)
+          if [ -n "$BAD" ]; then
+            echo "::error::package-lock.json 에 공식 레지스트리 밖에서 받는 의존성이 있습니다."
+            printf '%s\n' "$BAD"
+            exit 1
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run build
+      - run: npm run test
+
+      # vitest 의 include 는 src/** 뿐이라 하네스 자신의 테스트(scripts/test_execute.py)를
+      # 잡지 못한다. 이 스위트가 어느 층에서도 돌지 않으면 execute.py 의 변경은
+      # 검증 없이 머지된다 — 실제로 커밋 거부 분기가 그렇게 들어왔다.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install pytest
+      - run: pytest scripts/test_execute.py -q
+
+  ai-review:
+    name: AI 코드 리뷰
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      pull-requests: write
+    # 초안 PR은 리뷰하지 않는다. 문서만 바뀐 PR도 건너뛴다(아래 scope 판정).
+    # fork PR 에는 시크릿(CLAUDE_CODE_OAUTH_TOKEN)이 전달되지 않아 리뷰가 구조적으로 실패한다 —
+    # 통과할 수 없는 게이트로 머지를 영구 차단하지 않도록 아예 돌리지 않는다.
+    # 외부 컨트리뷰터를 받게 되면 pull_request_target 대신 별도 승인 워크플로가 필요하다.
+    if: >-
+      ${{ !github.event.pull_request.draft
+          && github.event.pull_request.head.repo.full_name == github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # review-ci.sh 가 `git diff <base>...HEAD` 를 쓰므로 전체 히스토리가 필요하다.
+          fetch-depth: 0
+          # 기본값(merge 커밋)이 아니라 PR의 실제 HEAD를 체크아웃한다.
+          ref: ${{ github.event.pull_request.head.sha }}
+          # 리뷰 세션은 PR이 통제하는 내용을 읽고 Bash를 쓸 수 있다.
+          # .git/config 에 GITHUB_TOKEN 을 남기지 않아 인젝션 시 반출 경로를 줄인다.
+          persist-credentials: false
+
+      # 문서·계획 파일만 바뀐 PR에 LLM을 쓰지 않는다. 여기서 세는 목록은 "리뷰할 가치가
+      # 있는가"를 판정하는 용도이고, 실제 리뷰 대상은 review-ci.sh 가 다시 정한다.
+      - name: 리뷰할 코드 변경이 있는지 확인
+        id: scope
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          # ⚠️ 여기서 제외하는 것은 "LLM을 쓸 가치가 없는 순수 문서 변경"뿐이다.
+          #    `.github/` 와 `.claude/**/*.md`(스킬·차원 정의)는 절대 제외하지 않는다 —
+          #    게이트 자신이나 리뷰 규칙을 바꾸는 PR이 리뷰 없이 초록으로 통과하기 때문이다.
+          #    같은 이유로 CRITICAL 규칙 원본인 CLAUDE.md·AGENTS.md 도 제외하지 않는다.
+          #    이전 패턴 `[^/]*\.md$` 는 루트 .md 를 통째로 제외해 CLAUDE.md 만 바꾼 PR이
+          #    리뷰 없이 초록으로 통과했다 — 바로 위 주석이 막겠다고 선언한 그 구멍이었다.
+          #    제외 대상은 실제로 규칙과 무관한 README/handoff 로 한정한다.
+          #    `docs/` 도 같은 이유로 제외하지 않는다 — execute.py `_load_guardrails()` 가
+          #    docs/*.md 를 통째로 읽어 Codex 프롬프트의 가드레일로 넣으므로, ADR.md·
+          #    ARCHITECTURE.md 변경은 문서 수정이 아니라 구현 규칙 변경이다.
+          #
+          # ⚠️ `|| true` 로 git 실패를 삼키지 마라. base.sha 가 unreachable 하면
+          #    git diff 가 죽는데, 그것을 "변경 0건"으로 뭉개면 게이트가 초록이 된다(fail-open).
+          #    git 실패와 "0건"은 분리해서, 실패는 job 을 떨어뜨린다.
+          if ! FILES=$(git diff --name-only "$BASE_SHA"...HEAD); then
+            echo "::error::git diff 실패 — base.sha($BASE_SHA)에 도달할 수 없습니다."
+            echo "::error::리뷰 대상을 판정하지 못했으므로 통과로 취급하지 않습니다."
+            exit 1
+          fi
+          FILES=$(printf '%s\n' "$FILES" \
+            | grep -vE '^(_workspace/|phases/|package-lock\.json$|(README|handoff)[^/]*\.md$)' || true)
+          COUNT=$(printf '%s\n' "$FILES" | grep -c . || true)
+          echo "count=$COUNT" >> "$GITHUB_OUTPUT"
+          echo "리뷰 대상 코드 파일 $COUNT 개"
+
+      - uses: actions/setup-node@v4
+        if: steps.scope.outputs.count != '0'
+        with:
+          node-version: 24
+
+      # 버전을 고정하지 않는다: 리뷰가 최신 CLI 기능(스킬·서브에이전트)에 의존하고
+      # 고정하면 금방 낡는다. 대신 이 job 은 GITHUB_TOKEN 을 갖지 않고 pull-requests
+      # 권한도 게시 스텝에서만 쓰인다. 공급망이 걱정되면 여기에 버전을 박아라.
+      - name: Claude Code 설치
+        if: steps.scope.outputs.count != '0'
+        run: npm i -g @anthropic-ai/claude-code
+
+      - name: 리뷰 실행
+        id: review
+        if: steps.scope.outputs.count != '0'
+        # 리뷰가 지적을 찾으면 exit 1 이지만, 코멘트를 게시하기 전에 job이 죽으면 안 된다.
+        # 상태를 저장해 두고 마지막 단계에서 판정한다.
+        continue-on-error: true
+        env:
+          # 인증은 둘 중 하나만 있으면 된다(review-ci.sh 가 둘 다 없을 때만 exit 2).
+          # ⚠️ 둘 다 등록하지 말 것. 두 값이 동시에 있을 때 CLI 가 무엇을 고르는지는
+          # 검증하지 않았다 — 어느 쪽으로 과금될지 불확실해지므로 쓰려는 것만 등록하고
+          # 나머지는 gh secret delete 로 지운다(미등록 시 빈 문자열이 넘어간다).
+          #
+          # 1) 구독 연동 토큰 — `claude setup-token` 으로 발급. 종량 결제가 아니라 기존
+          #    Claude 구독 사용량을 쓴다(CI가 구독 상한을 같이 소모한다는 뜻이기도 하다).
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # 2) Anthropic Console API 키 — PR 리뷰마다 해당 계정에 종량 과금된다.
+          #    REVIEW_MODEL 이 opus 이므로 PR 하나당 비용이 작지 않다.
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          REVIEW_MODEL: opus
+        run: |
+          set +e
+          bash scripts/review-ci.sh --base "$BASE_SHA" --out _workspace/review-ci
+          echo "status=$?" >> "$GITHUB_OUTPUT"
+
+      - name: PR에 게시
+        if: steps.scope.outputs.count != '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          node scripts/ci/post-review.mjs \
+            _workspace/review-ci/review.json \
+            _workspace/review-ci/review.md \
+            "${{ github.event.pull_request.number }}"
+
+      - name: 리뷰 로그 업로드
+        if: always() && steps.scope.outputs.count != '0'
+        uses: actions/upload-artifact@v4
+        with:
+          name: review-${{ github.event.pull_request.number }}
+          path: _workspace/review-ci/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: 판정 적용
+        if: steps.scope.outputs.count != '0'
+        run: |
+          case "${{ steps.review.outputs.status }}" in
+            0) echo "✓ Approve — critical/major 없음" ;;
+            1) echo "::error::조치가 필요한 지적이 있습니다. PR 코멘트를 확인하세요."; exit 1 ;;
+            *) echo "::error::리뷰를 완료하지 못했습니다(미검토). 통과로 취급하지 않습니다."; exit 1 ;;
+          esac
