@@ -25,6 +25,22 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+
+      # npm ci 앞에 둔다: 이 검사가 막으려는 것이 "npm ci 가 무엇을 설치하는가"이므로
+      # 설치 뒤에 확인하면 서드파티 postinstall 이 이미 실행된 뒤다.
+      # package-lock.json 은 LLM 리뷰 대상에서 제외돼 있다(diff 가 거대하고 판정이
+      # 확률적이라 값이 없다). 그래서 락파일만 바꾼 PR은 ai-review 를 건너뛰고 초록이
+      # 된다 — 그 구멍을 여기서 결정적으로 막는다.
+      - name: 락파일 레지스트리 검사
+        run: |
+          BAD=$(grep -oE '"resolved": *"[^"]+"' package-lock.json \
+            | grep -vE '"resolved": *"https://registry\.npmjs\.org/' || true)
+          if [ -n "$BAD" ]; then
+            echo "::error::package-lock.json 에 공식 레지스트리 밖에서 받는 의존성이 있습니다."
+            printf '%s\n' "$BAD"
+            exit 1
+          fi
+
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -34,6 +50,15 @@ jobs:
       - run: npm run lint
       - run: npm run build
       - run: npm run test
+
+      # vitest 의 include 는 src/** 뿐이라 하네스 자신의 테스트(scripts/test_execute.py)를
+      # 잡지 못한다. 이 스위트가 어느 층에서도 돌지 않으면 execute.py 의 변경은
+      # 검증 없이 머지된다 — 실제로 커밋 거부 분기가 그렇게 들어왔다.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install pytest
+      - run: pytest scripts/test_execute.py -q
 
   ai-review:
     name: AI 코드 리뷰
@@ -74,6 +99,9 @@ jobs:
           #    이전 패턴 `[^/]*\.md$` 는 루트 .md 를 통째로 제외해 CLAUDE.md 만 바꾼 PR이
           #    리뷰 없이 초록으로 통과했다 — 바로 위 주석이 막겠다고 선언한 그 구멍이었다.
           #    제외 대상은 실제로 규칙과 무관한 README/handoff 로 한정한다.
+          #    `docs/` 도 같은 이유로 제외하지 않는다 — execute.py `_load_guardrails()` 가
+          #    docs/*.md 를 통째로 읽어 Codex 프롬프트의 가드레일로 넣으므로, ADR.md·
+          #    ARCHITECTURE.md 변경은 문서 수정이 아니라 구현 규칙 변경이다.
           #
           # ⚠️ `|| true` 로 git 실패를 삼키지 마라. base.sha 가 unreachable 하면
           #    git diff 가 죽는데, 그것을 "변경 0건"으로 뭉개면 게이트가 초록이 된다(fail-open).
@@ -84,7 +112,7 @@ jobs:
             exit 1
           fi
           FILES=$(printf '%s\n' "$FILES" \
-            | grep -vE '^(_workspace/|phases/|docs/|package-lock\.json$|(README|handoff)[^/]*\.md$)' || true)
+            | grep -vE '^(_workspace/|phases/|package-lock\.json$|(README|handoff)[^/]*\.md$)' || true)
           COUNT=$(printf '%s\n' "$FILES" | grep -c . || true)
           echo "count=$COUNT" >> "$GITHUB_OUTPUT"
           echo "리뷰 대상 코드 파일 $COUNT 개"

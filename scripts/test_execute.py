@@ -420,6 +420,100 @@ class TestCommitStep:
 
 
 # ---------------------------------------------------------------------------
+# 커밋 거부(pre-commit 훅) 처리
+# ---------------------------------------------------------------------------
+
+class TestCommitStepRejection:
+    @staticmethod
+    def _reject_feat_commit(executor):
+        """feat 커밋만 pre-commit 훅에 거부되는 가짜 git."""
+        def fake_git(*args):
+            if args[:2] == ("diff", "--cached"):
+                return MagicMock(returncode=1)
+            if args[0] == "commit" and "feat(" in args[2]:
+                return MagicMock(returncode=1, stdout="SEC01 위반", stderr="")
+            return MagicMock(returncode=0, stdout="", stderr="")
+        executor._run_git = fake_git
+
+    def test_raises_instead_of_exiting(self, executor):
+        # sys.exit 로 죽으면 호출부가 step 상태를 되돌릴 기회를 잃는다.
+        self._reject_feat_commit(executor)
+        with pytest.raises(ex.CommitRejected):
+            executor._commit_step(2, "ui")
+
+    def test_housekeeping_commit_not_attempted(self, executor):
+        calls = []
+        def fake_git(*args):
+            calls.append(args)
+            if args[:2] == ("diff", "--cached"):
+                return MagicMock(returncode=1)
+            if args[0] == "commit" and "feat(" in args[2]:
+                return MagicMock(returncode=1, stdout="", stderr="")
+            return MagicMock(returncode=0, stdout="", stderr="")
+        executor._run_git = fake_git
+
+        with pytest.raises(ex.CommitRejected):
+            executor._commit_step(2, "ui")
+
+        assert [c[2] for c in calls if c[0] == "commit" and "chore(" in c[2]] == []
+
+
+class TestExecuteStepOnCommitRejection:
+    """커밋이 거부되면 step 이 끝난 것으로 남으면 안 된다 —
+    남으면 재실행이 그 step 을 건너뛰고 다음 step 부터 시작한다."""
+
+    @staticmethod
+    def _run(executor, codex_status):
+        def fake_invoke(step, preamble):
+            index = executor._read_json(executor._index_file)
+            for s in index["steps"]:
+                if s["step"] == 2:
+                    s["status"] = codex_status
+                    if codex_status == "error":
+                        s["error_message"] = "boom"
+            executor._write_json(executor._index_file, index)
+            return {}
+
+        executor._invoke_codex = fake_invoke
+        executor._commit_step = MagicMock(side_effect=ex.CommitRejected())
+        executor._total = 3
+
+        with pytest.raises(SystemExit) as exc:
+            executor._execute_single_step({"step": 2, "name": "ui"}, "")
+        return exc.value.code
+
+    def test_completed_step_reverted_to_pending(self, executor, top_index):
+        code = self._run(executor, "completed")
+
+        assert code == 1
+        step2 = next(s for s in executor._read_json(executor._index_file)["steps"] if s["step"] == 2)
+        assert step2["status"] == "pending"
+        assert "completed_at" not in step2
+
+    def test_completed_rejection_marks_top_index_error(self, executor, top_index):
+        self._run(executor, "completed")
+
+        top = json.loads(top_index.read_text())
+        assert top["phases"][0]["status"] == "error"
+
+    def test_error_step_still_marks_top_index_error(self, executor, top_index):
+        # 커밋 거부가 _update_top_index 호출 전에 프로세스를 죽이면
+        # 상위 index 가 in_progress 로 남는다.
+        code = self._run(executor, "error")
+
+        assert code == 1
+        top = json.loads(top_index.read_text())
+        assert top["phases"][0]["status"] == "error"
+
+    def test_error_step_keeps_error_status(self, executor, top_index):
+        self._run(executor, "error")
+
+        step2 = next(s for s in executor._read_json(executor._index_file)["steps"] if s["step"] == 2)
+        assert step2["status"] == "error"
+
+
+
+# ---------------------------------------------------------------------------
 # _invoke_codex (mocked)
 # ---------------------------------------------------------------------------
 

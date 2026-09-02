@@ -22,6 +22,15 @@ from typing import Optional
 ROOT = Path(__file__).resolve().parent.parent
 
 
+class CommitRejected(Exception):
+    """pre-commit 훅이 코드 커밋을 거부했다.
+
+    여기서 프로세스를 죽이지 않고 예외로 올리는 이유: 호출부가 step 상태를
+    정리해야 한다. 커밋이 거부됐는데 index.json 에 completed 가 남으면
+    재실행이 그 step 을 건너뛰고 다음 step 부터 시작한다.
+    """
+
+
 @contextlib.contextmanager
 def progress_indicator(label: str):
     """터미널 진행 표시기. with 문으로 사용하며 .elapsed 로 경과 시간을 읽는다."""
@@ -157,7 +166,7 @@ class StepExecutor:
                     print(r.stdout.strip())
                 if r.stderr.strip():
                     print(r.stderr.strip())
-                sys.exit(1)
+                raise CommitRejected()
 
         self._run_git("add", "-A")
         if self._run_git("diff", "--cached", "--quiet").returncode != 0:
@@ -329,7 +338,18 @@ class StepExecutor:
                     if s["step"] == step_num:
                         s["completed_at"] = ts
                 self._write_json(self._index_file, index)
-                self._commit_step(step_num, step_name)
+                try:
+                    self._commit_step(step_num, step_name)
+                except CommitRejected:
+                    # 커밋이 거부됐으면 이 step 은 끝난 게 아니다. completed 를 되돌려
+                    # 재실행이 step N+1 이 아니라 이 step 부터 다시 시작하게 한다.
+                    for s in index["steps"]:
+                        if s["step"] == step_num:
+                            s["status"] = "pending"
+                            s.pop("completed_at", None)
+                    self._write_json(self._index_file, index)
+                    self._update_top_index("error")
+                    sys.exit(1)
                 print(f"  ✓ Step {step_num}: {step_name} [{elapsed}s]")
                 return True
 
@@ -364,7 +384,10 @@ class StepExecutor:
                         s["error_message"] = f"[{self.MAX_RETRIES}회 시도 후 실패] {err_msg}"
                         s["failed_at"] = ts
                 self._write_json(self._index_file, index)
-                self._commit_step(step_num, step_name)
+                try:
+                    self._commit_step(step_num, step_name)
+                except CommitRejected:
+                    pass  # step 은 이미 error 로 기록됐다 — 아래 상위 index 갱신까지 마치고 종료한다
                 print(f"  ✗ Step {step_num}: {step_name} failed after {self.MAX_RETRIES} attempts [{elapsed}s]")
                 print(f"    Error: {err_msg}")
                 self._update_top_index("error")
